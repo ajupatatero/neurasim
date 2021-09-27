@@ -1,0 +1,2 @@
+pip install line_profiler
+pip install ptflops

@@ -1,0 +1,31 @@
+
+####################
+#    SIMULATION    #
+####################
+simClass: VonKarman
+GPU: False
+
+
+####################
+#  DISCRETIZATION  #
+####################
+Nx: 150 #[] number of control volumes in x direction
+Ny: 150 #[] number of control volumes in y direction
+Nt: 200 #[] number of time steps to simulate
+
+####################
+#     GEOMETRY     #
+####################
+#Domain
+Lx: 150 #[m]  or in mm in consistently changed
+Ly: 150 #[m]
+
+#Cilinder
+D: 10
+
+
+
+####################
+# PHYSICAL FORCES  #
+####################
+Reynolds: 200

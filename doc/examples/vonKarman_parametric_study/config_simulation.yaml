@@ -1,0 +1,40 @@
+
+####################
+#    SIMULATION    #
+####################
+simClass: VonKarman_rotative
+GPU: False
+
+#NB: CONSTANTS have more priority that the above, and exist in case the user wants to pass it directly, not yaml
+CONSTANT: []
+ITERABLE: [['A', [0, 0.5, 1, 1.5, 2, 2.5, 4, 5]],
+           ['Re', [200, 1000]],
+           #['Nx', [150]]
+          ]
+EXECUTE: simulate
+
+
+
+####################
+#  DISCRETIZATION  #
+####################
+Nx: 150 #[] number of control volumes in x direction
+Ny: 150 #[] number of control volumes in y direction
+Nt: 500 #[] number of time steps to simulate
+
+####################
+#     GEOMETRY     #
+####################
+#Domain
+Lx: 150 #[m]  or in mm in consistently changed
+Ly: 150 #[m]
+
+#Cilinder
+D: 10
+
+
+####################
+# PHYSICAL FORCES  #
+####################
+Reynolds: 200
+Alpha: 1.5

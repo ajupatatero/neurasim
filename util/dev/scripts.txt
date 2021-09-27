@@ -1,0 +1,23 @@
+@profile
+def write_sorted_letters(nb_letters=10**7):
+    ...
+
+kernprof -l -v your_program.py
+
+-l for line by line profile
+-v for immediately visualizing the results
+
+
+///////////////////////////
+
+python -m cProfile -s tottime your_program.py
+
+
+targeted profile:
+import cProfile
+cp = cProfile.Profile()
+cp.enable()
+
+
+cp.disable()
+cp.print_stats()

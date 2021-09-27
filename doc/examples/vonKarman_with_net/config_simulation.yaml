@@ -1,0 +1,52 @@
+
+####################
+#    SIMULATION    #
+####################
+simClass: VonKarman
+GPU: True
+sim_method: 'convnet' # CG or convnet
+
+network_params:
+  load_path: '/tmpdir/ajuriail/neuralsim/trainings/pando_networks/ModelTest_UNet3/'
+  model_name: 'ModelTest_UNet3'
+  new_train: 'old' # new or old 
+####################
+#  DISCRETIZATION  #
+####################
+Nx: 768 #[] number of control volumes in x direction
+Ny: 512 #[] number of control volumes in y direction
+Nt: 3000 #[] number of time steps to simulate
+
+####################
+#     GEOMETRY     #
+####################
+#Domain
+Lx: 768 #[m]  or in mm in consistently changed
+Ly: 512 #[m]
+
+#Cilinder
+D: 20
+xD: 256
+
+# Domain BC
+BC_domain_x: 'OPEN'
+BC_domain_y: 'OPEN'
+
+# CFL
+CFL: 0.2
+
+####################
+# PHYSICAL FORCES  #
+####################
+Reynolds: 140
+
+####################
+#     PLOTTING     #
+####################
+
+save_field: True
+out_dir: '/tmpdir/ajuriail/neuralsim/cases/7_old_pando_models/pando_Small/'
+in_dir:  '/tmpdir/ajuriail/neuralsim/cases/7_old_pando_models/pando_Small/'
+
+
+        
