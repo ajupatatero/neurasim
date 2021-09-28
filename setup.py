@@ -4,7 +4,7 @@ setup(
     name='NeuraSim',
     version='3.2.1',
     description='CNN to accelerate Poisson step in CFD solvers.',
-    author='Ekhi Ajuria, Antonio Giménez Nadal, et. al.',
+    author='Anonymus',
     license='LICENSE.txt',
 
     packages=find_packages(include=['NeuraSim']),   
