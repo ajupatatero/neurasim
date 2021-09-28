@@ -1,6 +1,6 @@
 # FluidNet (version 3)
 Project to accelerate the resolution of the Poisson step in CFD solvers, by means of convolutional neural networks.
-This project combines the PhiFlow v2 CFD solver with the Fluidnet_cxx_2 neural models developped by DAEP.
+This project is based on PhiFlow v2 and [FluidNet](https://github.com/google/FluidNet) 
 
 Please check the original [PhiFlow v2](https://github.com/tum-pbs/PhiFlow) code, which has been used to complement this code. This work has been developed respecting the Phiflow license agreement.
 
@@ -33,12 +33,12 @@ Memory:
 
 
 ## 2.Setup
-To install the software please follow the following instructions and commands. First of all, clone the git repository to its local folder. Then, execute the installer which will install all the missing dependencies, configure the enviorement in case of working in PANDO, and install the fluidnet package. Make sure to specify whether it is a developing setup or not. Meaning if the pip install is editable or not. As well as, if it is installed on PANDO.
+To install the software please follow the following instructions and commands. First of all, clone the git repository to its local folder. Then, execute the installer which will install all the missing dependencies, configure the enviorement, and install the fluidnet package. Make sure to specify whether it is a developing setup or not. Meaning if the pip install is editable or not. 
 
 ```
 cd <path where to clone the repository>
 
-git clone [--branch <branchname] https://gitlab.com/daep-ia/fluidnet_3.git
+git clone [--branch <branchname] repository
 
 module load python/3.7
 
