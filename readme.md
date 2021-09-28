@@ -35,17 +35,6 @@ Memory:
 ## 2.Setup
 To install the software please follow the following instructions and commands. First of all, clone the git repository to its local folder. Then, execute the installer which will install all the missing dependencies, configure the enviorement, and install the fluidnet package. Make sure to specify whether it is a developing setup or not. Meaning if the pip install is editable or not. 
 
-```
-cd <path where to clone the repository>
-
-git clone [--branch <branchname] repository
-
-module load python/3.7
-
-python ./fluidnet_3/scripts/install.py {--pando, -p} <True>  {--develope, -d} <True> {--update, -u} <False>
-
-```
-
 
 # Usage and Guides
 [To consult the full documentation as well as all the guides and miscellanious. Go to the Sphinx generated HTML index. Or click on this link.](doc/build/html/index.html)
