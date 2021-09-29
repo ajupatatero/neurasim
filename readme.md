@@ -32,7 +32,7 @@ python install.py
 
 ## 2. Launching test cases with trained networks
 
-The networks used on this work are included in the git repository in the ```trained_networks/``` folder. Following the paper's notation, the networks with  the short term loss (STL), partially frozen long term loss (PF-LTL) and full long term loss (F-LTL) for several look ahead iterations (LAI) are:
+Plase note that the shown cases are developed to be launched in GPU cards, thus make sure that a GPU card is available in your computer or supercomputer. The networks used on this work are included in the git repository in the ```trained_networks/``` folder. Following the paper's notation, the networks with  the short term loss (STL), partially frozen long term loss (PF-LTL) and full long term loss (F-LTL) for several look ahead iterations (LAI) are:
 
 Training Strategy |   LAI  | Network name
 ----------------- | ------ | ------------
@@ -44,6 +44,26 @@ F-LTL             |   1-2  | ```lt_grad_1_2/Unet_lt_grad_1_2```
 F-LTL             |   2-4  | ```lt_grad_2_4/Unet_lt_grad_2_4```
 F-LTL             |   2-6  | ```lt_grad_2_6/Unet_lt_grad_2_6```
 
-# Contributors
+To launch the cases create a ```cases``` folder outside the repository. Then, create a folder for the desired test case, and copy the desired confi_file from ```doc/config_files```. For example to recreate a plume with cylinder case:
 
-# Acknowledgements
+```
+cd /your/path/to/launch
+
+mkdir cases
+mkdir cases/plume
+
+cp /path/to/neurasim/doc/config_files/config_simulation_plume_cyl.yaml ./cases/plume
+
+cd cases/plume
+
+```
+
+Once the wanted configuration file is copied and modified to match the desired configuration, entry-points are used to launch the simulation, so just type:
+
+
+```
+simulate -cd config_simulation_plume_cyl.yaml
+
+```
+
+
