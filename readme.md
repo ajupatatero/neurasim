@@ -64,4 +64,37 @@ Once the wanted configuration file is copied and modified to match the desired c
 simulate -cd config_simulation_plume_cyl.yaml
 ```
 
+## 3. Retraining networks
 
+To retrain new network architectures, or to try new hyperparameter configurations, a training dataset should be created. In this works case, the same **2D dataset** as the original FluidNet [Section 1: Generating the data - Generating training data](https://github.com/google/FluidNet#1-generating-the-data) (generated with MantaFlow) is used. Please carefully follow the intructions to generate the dataset, which should occupy around 48Gb.
+
+The dataset file structure should be located in ```<dataDir>``` folder with the following structure: 
+```
+.
+└── dataDir
+    └── dataset
+        ├── te
+        └── tr
+
+```
+To train a network, first create a folder outside of the repository (for example in the previously introduced ```cases```folder, and copy the training congifuration found in ```path/to/neurasim/doc/config_files/config_train.yaml```
+
+```
+cd cases
+mkdir train
+cd train
+cp path/to/neurasim/doc/config_files/config_train.yaml .
+```
+
+Precise the location of the dataset in ```pytorch/config_files/trainConfig.yaml``` writing the folder location at ```dataDir``` (__use absolute paths__).
+Precise also ```dataset``` (name of the dataset), and output folder ```modelDir```where the trained model and loss logs will be stored and the model name ```modelFilename```. Once this is done, the hyperparameteres should be tuned. Particularly, the following options are highlighted:
+
+* ```modelParam: divLongTermLambda:``` If set to 0 no long term is used (STL training), whereas for LTL trainings usually it is set to 5.
+* ```modelParam: ltGrad:``` If true the intermediate gradients are computed (F-LTL) and if set to False the PF-LTL training is performed
+* ```longTermDivNumSteps:``` Number of LAI.
+
+Once this is done, thanks to the entry points, to launch the training just type:
+
+```
+train
+```
