@@ -55,7 +55,6 @@ mkdir cases/plume
 cp /path/to/neurasim/doc/config_files/config_simulation_plume_cyl.yaml ./cases/plume
 
 cd cases/plume
-
 ```
 
 Once the wanted configuration file is copied and modified to match the desired configuration, entry-points are used to launch the simulation, so just type:
@@ -63,7 +62,6 @@ Once the wanted configuration file is copied and modified to match the desired c
 
 ```
 simulate -cd config_simulation_plume_cyl.yaml
-
 ```
 
 
