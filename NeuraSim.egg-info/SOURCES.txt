@@ -1,0 +1,7 @@
+setup.py
+NeuraSim.egg-info/PKG-INFO
+NeuraSim.egg-info/SOURCES.txt
+NeuraSim.egg-info/dependency_links.txt
+NeuraSim.egg-info/entry_points.txt
+NeuraSim.egg-info/requires.txt
+NeuraSim.egg-info/top_level.txt

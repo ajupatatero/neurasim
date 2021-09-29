@@ -1,0 +1,10 @@
+[console_scripts]
+analyze = interface.commands.analyze:main
+iterate = interface.commands.iterate:main
+launch = interface.commands.launch:main
+meta_analyze = interface.commands.meta_analyze:main
+mgit = interface.commands.mgit:main
+simulate = interface.commands.simulate:main
+train = interface.commands.train:main
+update = interface.commands.update:main
+
