@@ -1,41 +1,31 @@
-
 ####################
 #    SIMULATION    #
 ####################
 simClass: Plume
 GPU: True
-sim_method: convnet
+sim_method: convnet # Choose between convnet and CG (as reference)
 
 #Field saving options
 save_field: True
-save_field_x_ite: 10 #si por memoria demasiado baja a 40 o menos
+save_field_x_ite: 10
 save_post_x_ite: 10
 
 #Plot options
 plot_field: True
 plot_x_ite: 50
-#plot_field_steps: False
-#plot_field_gif: False
 
 #Post-computations options
 post_computations: False
-#save_post_x_ite: 100
 
-out_dir: './results_lt_nograd_4_16/Ri_0_1/'
+out_dir: './output/dir/'
 
+####################
+# PHYSICAL FORCES  #
+####################
 Richardson: 0.1
 gravity: 1.0
 gravity_x: 0
 gravity_y: 1
-cylinder: True
-#Cilinder
-D: 20
-yD: 80
-input_rad: 0.145
-input_vel: 1.0
-
-
-
 
 ####################
 #  DISCRETIZATION  #
@@ -43,19 +33,17 @@ input_vel: 1.0
 Nx: 128 #[] number of control volumes in x direction
 Ny: 128 #[] number of control volumes in y direction
 Nt: 1000 #[] number of time steps to simulate
-
 # CFL
 CFL: 0.2
-
 
 ####################
 #    SOLVER IA     #
 ####################
 ite_transition: 0
 network_params:
-  load_path: '/tmpdir/ajuriail/neuralsim/trainings/new_structure/lt_nograd_4_16/Unet_lt_nograd_4_16/'
+  load_path: '/path/to/neurasim/trained_networks/lt_nograd_4_16/Unet_lt_nograd_4_16/'
   model_name: 'Unet_lt_nograd_4_16'
-  new_train: 'new'
+  new_train: 'new' # Option to read networks trained with older versions, not to be modified in this scope
 
 ####################
 #  NORMALIZATION   #
@@ -75,3 +63,10 @@ Ly: 128
 #BC
 BC_domain_x: OPEN
 BC_domain_y: STICKY
+
+#Cilinder
+cylinder: True
+D: 20
+yD: 80
+input_rad: 0.145
+input_vel: 1.0

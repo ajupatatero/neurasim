@@ -11,26 +11,26 @@
 #   DATA
 #=========================================
 # dataDir : Dataset location
-dataDir: "/tmpdir/ajuriail/manta/data/datasets/" 
+dataDir: "/absolute/path/to/data/datasets/"
 # dataset : Dataset name. Folder inside dataDir with training and testing scenes
-dataset: "output_current_128_model_sphere"
+dataset: "dataset_name"
 # numWorkers : number of parallel workers for dataloader. Set to 0 to allow PyTorch
 # to automatically manage loading.
 numWorkers: 3
 # If true, dataset is preprocessed and programs exists.
 # Preprocessing is automatic if no previous preproc is detected on current dataset.
-preprocOriginalFluidNetDataOnly: false 
+preprocOriginalFluidNetDataOnly: false
 # shuffleTraining : Shuffles dataset
-shuffleTraining: true 
+shuffleTraining: true
 
 
 #=========================================
 #   OUTPUT
 #=========================================
 # modelDir : Output folder for trained model and loss log.
-modelDir: "/tmpdir/ajuriail/neuralsim/trainings/debug_mem/lt_nograd_2_4/Unet_lt_nograd_2_4" 
+modelDir: "/absolute/path/to/save/your/model/modelname"
 # modelFilename : Trained model name
-modelFilename: "convModel"  
+modelFilename: "convModel"
 
 #=========================================
 #   TRAINING MONITORING
@@ -42,12 +42,12 @@ freqToFile: 25
 # Prints or shows validation dataset and compares net
 # output to GT.
 # Options: save (save figures), show (shows in windows), none
-printTraining: "save" 
+printTraining: "save"
 
 #=========================================
 #   TRAINING PARAMETER
 #=========================================
-batchSize: 260 #62 #20
+batchSize: 64
 # maxEpochs : Maximum number of epochs
 maxEpochs: 1000
 # resume : resume training from checkpoint.
@@ -55,7 +55,7 @@ resumeTraining: false
 modelParam:
     # model : options ('FluidNet', 'ScaleNet')
     #   -FluidNet : uses the architecture found in lib/model.py (based on FluidNet)
-    #   -ScaleNet : uses a multiscale architecture found in lib/multi_scale_net.py 
+    #   -ScaleNet : uses a multiscale architecture found in lib/multi_scale_net.py
     model: "ScaleNet"
 
     # inputChannels : Network inputs. At least one of them must be set to true!
@@ -77,7 +77,7 @@ modelParam:
     divL1Lambda: 0
     # MSE of long term divergence
     # If > 0, implements the Long Term divergence concept from FluidNet
-    divLongTermLambda: 0
+    divLongTermLambda: 5
     # Differentiable long term loss, or ordinary lt (data augmentation)
     ltGrad: false
     # longTermDivNumSteps : We want to measure what the divergence is after
@@ -86,7 +86,7 @@ modelParam:
     longTermDivNumSteps:
         - 2
         - 4
-    # longTermDivProbability is the probability that longTermDivNumSteps[0] 
+    # longTermDivProbability is the probability that longTermDivNumSteps[0]
     # will be taken, otherwise longTermDivNumSteps[1] will be taken with
     # probability of 1 - longTermDivProbability.
     longTermDivProbability: 0.9
@@ -95,19 +95,19 @@ modelParam:
     # normalizeInputChan : which channel to calculate std
     normalizeInputChan: "UDiv"
     # normalizeInputThreshold : don't normalize input noise
-    normalizeInputThreshold: 0.00001  
+    normalizeInputThreshold: 0.00001
     # normalizing scale factor
     scale_factor: 10
     # Dictionary for normalization
     normalization:
         normalize: True
         scale_factor: 10.0
-        debug_folder: "/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_grad_2_4/"
+        debug_folder: "/absolute/path/for/debugging"
 
     #=========================================
     #   PHYSICAL PARAMETERS
     #=========================================
-    # Time step: default simulation timestep. 
+    # Time step: default simulation timestep.
     dt: 0.1
     # Resolution of domain (it must match the data coming from the data loader!)
     nnx: 128
@@ -122,7 +122,7 @@ modelParam:
     #           (1)         (2)
     # rho_0 being the average density and delta_rho local difference of density
     # w.r.t average density.
-    # Mantaflow calls (1) gravity and (2) buoyancy and allows for different g's 
+    # Mantaflow calls (1) gravity and (2) buoyancy and allows for different g's
     buoyancyScale: 0
     gravityScale: 0
     # Gravity vector: Direction of gravity Vector
@@ -143,7 +143,7 @@ modelParam:
     # long term training.
     trainGravityProb: 0.3
     # ------------------------------------
-    # Introduces a correcting factor in the denisty equation 
+    # Introduces a correcting factor in the denisty equation
     # from "A splitting method for incompressible flows with variable
     # density based on a pressure Poisson equation" (Guermond, Salgado).
     # Not really tested... Recommendation is to leave it as false.
@@ -156,19 +156,19 @@ modelParam:
     # Bridson
     viscosity: 0
     # timeScaleSigma : Amplitude of time scale perturb during training.
-    timeScaleSigma: 1 
+    timeScaleSigma: 1
     # maccormackStrength : used in semi-lagrangian MacCormack advection
     # when LT div is activated. 0.6 is a good value. If ~1, can lead to
     # high frequency artifacts.
     maccormackStrength: 0.6
     # sampleOutsideFluid : if true, allows particles in advection to 'land' inside
-    # obstacles. In general, we don't want that, so leave it as false to avoid 
+    # obstacles. In general, we don't want that, so leave it as false to avoid
     # possible artifacts.
     sampleOutsideFluid: false
 
     #=========================================
     #   SIMULATION PARAMETERS
-    #=========================================    
+    #=========================================
     sim_phi:
         # GPU utilization
         GPU: True
@@ -176,28 +176,25 @@ modelParam:
         Nx: 128 #[] number of control volumes in x direction
         Ny: 128 #[] number of control volumes in y direction
         Nt: 1 #[] number of time steps to simulate
-
         #Domain
         Lx: 128 #[m]  or in mm in consistently changed
         Ly: 128 #[m]
-
         # CFL
         CFL: 0.2
-
         # time
         dt: 1
-
+        # Choose between network and CG, set to NN for the training
         sim_method: 'convnet' # CG or convnet
-
+        # Network normalization and debugging
         normalization:
             normalize: True
             scale_factor: 10.0
-            debug_folder: "/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_grad_2_6/"
-
+            debug_folder: "/absolute/path/for/debugging"
+        # Network to load for lt simulations (matches the network been trained)
         network_params:
-            load_path: "/tmpdir/ajuriail/neuralsim/trainings/new_structure/lt_grad_2_6/Unet_lt_grad_2_6"
-            model_name: 'Unet_lt_grad_1_2'
-            new_train: 'new' # new or old
-        
+            load_path: "/absolute/path/where/model/is/saved"
+            model_name: 'modelname'
+            new_train: 'new' # Legacy option to be deleted
+        # For debugging purposes
         in_dir: './'
         out_dir: './'
