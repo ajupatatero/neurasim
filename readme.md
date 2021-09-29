@@ -32,7 +32,19 @@ python install.py
 
 ## 2. Launching test cases with trained networks
 
-The networks used on this work are included in the git repository in the ```trained_networks/``` folder. 
+The networks used on this work are included in the git repository in the ```trained_networks/``` folder. Following the paper's notation, the networks with  the short term loss (STL), partially frozen long term loss (PF-LTL) and full long term loss (F-LTL) for several look ahead iterations (LAI) are:
+
+Training Strategy |   LAI  | Network name
+----------------- |--------|-------------
+STL               |    -   | ```nolt/Unet_nolt_3'```
+----------------- |--------|-------------
+PF-LTL            |   2-4  | ```lt_nograd_2_4/Unet_nolt_grad_2_4'```
+PF-LTL            |   4-8  | ```lt_nograd_4_8/Unet_nolt_grad_2_4'```
+PF-LTL            |   4-16 | ```lt_nograd_4_16/Unet_nolt_grad_4_16'```
+----------------- |--------|-------------
+F-LTL             |   1-2  | ```lt_grad_1_2/Unet_lt_grad_1_2'```
+F-LTL             |   1-2  | ```lt_grad_1_2/Unet_lt_grad_1_2'```
+F-LTL             |   1-2  | ```lt_grad_1_2/Unet_lt_grad_1_2'```
 
 # Contributors
 
