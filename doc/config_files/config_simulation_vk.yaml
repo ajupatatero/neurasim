@@ -1,0 +1,77 @@
+
+####################
+#    SIMULATION    #
+####################
+simClass: VonKarman_rotative
+GPU: True
+sim_method: convnet
+
+#Field saving options
+save_field: True
+save_field_x_ite: 50 #si por memoria demasiado baja a 40 o menos 
+save_post_x_ite: 50
+
+#Plot options
+plot_field: True
+#plot_x_ite: 10
+#plot_field_steps: False
+#plot_field_gif: False
+
+#Post-computations options
+post_computations: True
+#save_post_x_ite: 100
+
+#in_dir: './results/'
+out_dir: './results_lt_nograd_4_16/Re100/alpha_0/' #'./results_cg/'
+         #'./results_lt_grad_2_4/'
+         
+
+####################
+#  DISCRETIZATION  #
+####################
+Nx: 896 #[] number of control volumes in x direction
+Ny: 608 #[] number of control volumes in y direction
+Nt: 10000 #[] number of time steps to simulate
+
+# CFL
+CFL: 0.2 
+
+
+####################
+#    SOLVER IA     #
+####################
+ite_transition: 0
+network_params:
+  load_path: '/tmpdir/ajuriail/neuralsim/trainings/new_structure/lt_nograd_4_16/Unet_lt_nograd_4_16/'
+  model_name: 'Unet_lt_nograd_4_16'
+  new_train: 'new' 
+
+####################
+#  NORMALIZATION   #
+####################
+normalization:
+  normalize: True
+  scale_factor: 10.0
+  debug_folder: './results/debug/'
+
+####################
+#     GEOMETRY     #
+####################
+#Domain
+Lx: 300 
+Ly: 200
+
+#BC
+BC_domain_x: OPEN
+BC_domain_y: STICKY
+
+#Cilinder
+D: 10  
+xD: 100
+
+####################
+# PHYSICAL FORCES  #
+####################
+Reynolds: 100.0
+Alpha: 0.0 
+
