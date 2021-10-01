@@ -8,15 +8,15 @@ from analysis.mesure import *
 
 class TrainSim(Simulation):
     '''Training SIMULATION CLASS
-    This class, defines the simulations for the training procedure. 
+    This class, defines the simulations for the training procedure.
     It solves in a general manner  the incompressible NS equations.
     No particular inflow/outflow conditions are implemented.
     '''
     def __init__(self, config, model, bsz):
 
         super().__init__(config['sim_phi'])
-        self.domain = Domain(x=self.Nx, y=self.Ny, boundaries=CLOSED) 
-        
+        self.domain = Domain(x=self.Nx, y=self.Ny, boundaries=CLOSED)
+
         # Initialize velocity and mask and density variables
         self.velocity = self.domain.staggered_grid(Noise(batch=bsz))
         self.vel_mask = self.domain.staggered_grid(Noise(batch=bsz))
@@ -28,7 +28,7 @@ class TrainSim(Simulation):
         self.dt = config['sim_phi']['dt']
 
         # Secondary conf file
-        self.mconf = config 
+        self.mconf = config
         self.model = model
 
         # For now jst hardcoded
@@ -60,22 +60,20 @@ class TrainSim(Simulation):
             #velocity_clean = self.velocity
 
         # Step 2: Fluid Density
-        density = advect.semi_lagrangian(self.density, velocity_clean, dt_cuda) 
+        density = advect.semi_lagrangian(self.density, velocity_clean, dt_cuda)
 
         # Step 3: Advect Velocity
         self.velocity = advect.semi_lagrangian(self.velocity, velocity_clean, dt_cuda)
-        #self.velocity = change_nan_zero(self.velocity, self.domain)
-
 
         # Step 4: Add External Forces
         # Step 4.1: Add Buoyancy
         if buoyancyScale > 0:
-            buoyancy_force = density * buoyancyScale[0] * (self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity 
+            buoyancy_force = density * buoyancyScale[0] * (self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity
             self.velocity += buoyancy_force
         # Step 4.2: Add Gravity
         if gravityScale > 0:
             unitary_field = self.domain.scalar_grid(1)
-            gravity_force = unitary_field * gravityScale[0] *( self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity 
+            gravity_force = unitary_field * gravityScale[0] *( self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity
             self.velocity += gravity_force
 
         # Step 5: Apply BC
@@ -97,7 +95,7 @@ class TrainSim(Simulation):
 
         # Step 0: Declare advection velocity and gravity and bouyancy values
         velocity_clean = self.velocity
-        
+
         buoyancyScale = self.mconf['buoyancyScale']
         gravityScale = self.mconf['gravityScale']
         dt_cuda = torch.from_numpy(np.array(self.dt)).cuda()
@@ -105,25 +103,23 @@ class TrainSim(Simulation):
         # Step 1: If viscosity, add viscosity
         if (self.viscosity > 0):
             self.velocity = diffuse.explicit(self.velocity, self.viscosity, dt_cuda)
-            #velocity_clean = self.velocity
-        
+
         # Step 2: Fluid Density
-        density = advect.semi_lagrangian(self.density, velocity_clean, dt_cuda) 
+        density = advect.semi_lagrangian(self.density, velocity_clean, dt_cuda)
 
         # Step 3: Advect Velocity
         self.velocity = advect.semi_lagrangian(self.velocity, velocity_clean, dt_cuda)
-        #self.velocity = change_nan_zero(self.velocity, self.domain)
 
         # Step 4: Add External Forces
         # Step 4.1: Add Buoyancy
         if buoyancyScale > 0:
-            buoyancy_force = density * buoyancyScale[0] * (self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity 
+            buoyancy_force = density * buoyancyScale[0] * (self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity
             self.velocity += buoyancy_force
         # Step 4.2: Add Gravity
         if gravityScale > 0:
             unitary_field = self.domain.scalar_grid(1)
-            gravity_force = unitary_field * gravityScale[0] *( self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity 
+            gravity_force = unitary_field * gravityScale[0] *( self.mconf['gravityVec']['x'], self.mconf['gravityVec']['y']) >> self.velocity
             self.velocity += gravity_force
-    
+
         # Step 5: Apply BC
         self.velocity *= self.vel_mask

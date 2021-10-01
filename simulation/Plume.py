@@ -18,7 +18,7 @@ class Plume(Simulation):
 
     def __init__(self,config):
         super().__init__(config)
-        
+
         self.D=config['D']
         self.xD=config['xD']
         self.BCx = config['BC_domain_x']
@@ -41,7 +41,7 @@ class Plume(Simulation):
         except:
             self.factor = 1
 
-        self.time_recorder = Timer(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_')          
+        self.time_recorder = Timer(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_')
 
     def define_simulation_geometry(self):
         self.time_recorder.record(point_name='init_define_simulation_geometry')
@@ -51,23 +51,20 @@ class Plume(Simulation):
         max_inflow = np.int(self.Lx/2 + self.input_rad)
         self.INFLOW_DENSITY = HardGeometryMask(Box[min_inflow:max_inflow+1, :3]) >> self.DOMAIN.scalar_grid()
         self.INFLOW_DENSITY *= 1
-        self.INFLOW = HardGeometryMask(Box[min_inflow:max_inflow+1, :3]) >> self.DOMAIN.staggered_grid()    
-        # For debug
-        #INFLOW = CenteredGrid(Sphere(center=(50, 10), radius=5), extrapolation.BOUNDARY, **self.DOMAIN) * 0.2
+        self.INFLOW = HardGeometryMask(Box[min_inflow:max_inflow+1, :3]) >> self.DOMAIN.staggered_grid()
 
         self.time_recorder.record(point_name='end_define_simulation_geometry')
 
     def define_simulation_fields(self):
         self.time_recorder.record(point_name='init_define_simulation_fields')
-        
+
         #Initialize the fields
         bsz = 1
-        
+
         if self.resume:
             #Import the saved fields
-            
-            velx = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_x_field.npy')[-1,0,:,:] 
-            vely = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy')[-1,0,:,:] 
+            velx = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_x_field.npy')[-1,0,:,:]
+            vely = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy')[-1,0,:,:]
 
             velx = torch.from_numpy(velx).cuda()
             vely = torch.from_numpy(vely).cuda()
@@ -84,10 +81,10 @@ class Plume(Simulation):
 
             #TODO: use the staggered function, verify if ok
 
-            
+
             try:
-                velmaskx = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vel_mask_x_field.npy')[-1,0,:,:] 
-                velmasky = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vel_mask_y_field.npy')[-1,0,:,:] 
+                velmaskx = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vel_mask_x_field.npy')[-1,0,:,:]
+                velmasky = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vel_mask_y_field.npy')[-1,0,:,:]
 
                 velmaskx = torch.from_numpy(velmaskx).cuda()
                 velmasky = torch.from_numpy(velmasky).cuda()
@@ -102,18 +99,18 @@ class Plume(Simulation):
                 tensor_U_mask_unstack = unstack_staggered_tensor(tensor_U_mask)
                 self.vel_mask =  StaggeredGrid(tensor_U_mask_unstack, self.DOMAIN.bounds)
             except:
-                self.vel_mask = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1) 
+                self.vel_mask = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1)
                 print('the vel mask was not imported in resume')
 
             pfield = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_pressure_field.npy')[-1,:,:,:]
             self.pressure = CenteredGrid(tensor(torch.from_numpy(pfield).cuda(), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
 
             self.density = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)).cuda(), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
-     
+
         else:
             #Create the fields
             self.velocity = (self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )
-            self.vel_mask = (self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 ) 
+            self.vel_mask = (self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )
             self.pressure = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
             self.density = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
 
@@ -121,7 +118,7 @@ class Plume(Simulation):
 
     def initialize_aux_variables(self):
         self.time_recorder.record(point_name='init_initialize_aux_variables')
-        
+
         #Output Variables Initialization
         if self.resume:
 
@@ -168,9 +165,9 @@ class Plume(Simulation):
 
             self.velocity, self.pressure, self._iterations, self.div_in, time_CG = fluid.make_incompressible_BC(self.velocity, self.DOMAIN, (), pressure_guess=self.pressure,
             solve_params=math.LinearSolve(absolute_tolerance = self.precision, max_iterations = self.max_iterations ), solver=self.sim_method)
-            
+
             self.time_recorder.add_single_interval(time_CG, interval_name = f'ite_{self.ite}_>CG_inference_interval')
-            
+
             self.div_out = divergence(self.velocity)
 
             self.time_recorder.record(point_name=f'ite_{self.ite}_>end_poisson__CG')
@@ -179,26 +176,23 @@ class Plume(Simulation):
             self.time_recorder.record(point_name=f'ite_{self.ite}_>init_poisson__convnet')
 
             if self.ite<int(self.ite_transition):
-                #self.velocity, self.pressure, self._iterations, self.div_in = fluid.make_incompressible(self.velocity, self.DOMAIN, (), pressure_guess=self.pressure,
-                #solve_params=math.LinearSolve(absolute_tolerance = self.precision, max_iterations = self.max_iterations) )
 
                 self.velocity, self.pressure, self._iterations, self.div_in, time_CG = fluid.make_incompressible_BC(self.velocity, self.DOMAIN, (), pressure_guess=self.pressure,
                 solve_params=math.LinearSolve(absolute_tolerance = self.precision, max_iterations = self.max_iterations ), solver=self.sim_method)
 
                 self.time_recorder.add_single_interval(time_CG, interval_name = f'ite_{self.ite}_>CG_inference_interval')
-                
+
                 self.div_out = divergence(self.velocity)
             else:
                 in_density_t = self.density.values._native.transpose(-1, -2)
                 in_U_t = torch.cat((self.velocity.staggered_tensor().tensors[0]._native.transpose(-1, -2).unsqueeze(1),
                             self.velocity.staggered_tensor().tensors[1]._native.transpose(-1, -2).unsqueeze(1)), dim=1)
 
-                data = torch.cat((in_density_t.unsqueeze(1).unsqueeze(1), 
-                            in_U_t[:,0,:-1,:-1].unsqueeze(1).unsqueeze(1), 
-                            in_U_t[:,1,:-1,:-1].unsqueeze(1).unsqueeze(1), 
-                            (self.flags+1), 
+                data = torch.cat((in_density_t.unsqueeze(1).unsqueeze(1),
+                            in_U_t[:,0,:-1,:-1].unsqueeze(1).unsqueeze(1),
+                            in_U_t[:,1,:-1,:-1].unsqueeze(1).unsqueeze(1),
+                            (self.flags+1),
                             in_density_t.unsqueeze(1).unsqueeze(1)), dim = 1)
-                #data = data.transpose(-1, -2)
 
                 with torch.no_grad():
                     if self.new_train:
@@ -207,10 +201,10 @@ class Plume(Simulation):
                         UDiv_CG = UDiv_CG.unsqueeze(2)
                         self.velocity, _ = load_values(UDiv_CG, 1-self.flags, self.DOMAIN)
 
-                        self.pressure, self.velocity, self.div_out, self.div_in, time_Unet = self.model(self.velocity, 1-self.flags, 
+                        self.pressure, self.velocity, self.div_out, self.div_in, time_Unet = self.model(self.velocity, 1-self.flags,
                                     self.DOMAIN, self.config_norm, self.ite, 0, 'vk_inside')
 
-                        time_Unet = float(time_Unet[0]) #to pick the total the rest are steps                        
+                        time_Unet = float(time_Unet[0]) #to pick the total the rest are steps
                         self.time_recorder.add_single_interval(time_Unet, interval_name = f'ite_{self.ite}_>UNET_inference_interval')
 
                     else:
@@ -238,11 +232,9 @@ class Plume(Simulation):
                 options=[ ['limits', [-0.5, 0.5]],
                 ['full_zoom', True],
                 ['zoom_position', zoom_pos],
-                #['edges',edges],
-                #['square', [x1,x2,x3,x4]],
                 ['aux_contourn', True],
                 ['indeces', False],
-                ['grid', False]                                    
+                ['grid', False]
                 ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='pressure []',
@@ -254,27 +246,24 @@ class Plume(Simulation):
                 options=[ ['limits', [-0.5, 0.5]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        ['aux_contourn', True],                
+                        ['aux_contourn', True],
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='pressure []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_pressure_timestep_{self.ite}.png')
 
     def plot_vorticity(self, zoom_pos = []):
-        vorticity = calculate_vorticity(self.Lx,self.Ly,self.dx,self.dy,self.velocity)           
-        
+        vorticity = calculate_vorticity(self.Lx,self.Ly,self.dx,self.dy,self.velocity)
+
         if self.plot_field_gif:
             self.gif_vorticity.add_frame(self.ite, vorticity,
                 plot_type=['surface'],
                 options=[ ['limits', [-0.2, 0.5]],
                         ['full_zoom', False],
-                        #['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                    
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vorticity []',
@@ -286,26 +275,24 @@ class Plume(Simulation):
                 options=[ ['limits', [-0.2, 0.5]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        ['aux_contourn', True],                
+                        ['aux_contourn', True],
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vorticity []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vorticity_timestep_{self.ite}.png')
 
-    def plot_density(self, zoom_pos = []):      
-        
+    def plot_density(self, zoom_pos = []):
+
         if self.plot_field_gif:
             self.gif_density.add_frame(self.ite, self.density,
                 plot_type=['surface'],
                 options=[ ['limits', [-self.input_density, self.input_density]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                    
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='density []',
@@ -317,26 +304,23 @@ class Plume(Simulation):
                 options=[ ['limits', [-self.input_density, self.input_density]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        ['aux_contourn', True],                
+                        ['aux_contourn', True],
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='density []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_density_timestep_{self.ite}.png')
 
-    def plot_divergence(self, zoom_pos = []):      
+    def plot_divergence(self, zoom_pos = []):
         div = divergence(self.velocity)
         if self.plot_field_gif:
             self.gif_divergence.add_frame(self.ite, div,
                 plot_type=['surface'],
-                options=[ #['limits', [-0.2, 0.5]],
+                options=[
                         ['full_zoom', False],
-                        #['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                    
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='divergence []',
@@ -345,29 +329,27 @@ class Plume(Simulation):
         if self.plot_field_steps:
             plot_field(div,
                 plot_type=['surface'],
-                options=[ #['limits', [-0.2, 0.5]],
+                options=[
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        ['aux_contourn', True],                
+                        ['aux_contourn', True],
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='divergence []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_divergence_timestep_{self.ite}.png')
 
     def plot_velocity_norm(self, zoom_pos = []):
-        norm_velocity = calculate_norm_velocity(self.velocity)            
+        norm_velocity = calculate_norm_velocity(self.velocity)
         if self.plot_field_gif:
             self.gif_velocity.add_frame(self.ite, norm_velocity,
                 plot_type=['surface'],
                 options=[ ['limits', [0, 1.2]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='norm velocity []',
@@ -379,15 +361,13 @@ class Plume(Simulation):
                 options=[ ['limits', [0, 1.2]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='norm velocity []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_timestep_{self.ite}.png')
 
     def plot_velocity_x(self, zoom_pos = []):
@@ -398,11 +378,9 @@ class Plume(Simulation):
                 options=[ ['limits', [0, 1.2]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vel x []',
@@ -414,15 +392,13 @@ class Plume(Simulation):
                 options=[ ['limits', [0, 1.2]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vel x []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_x_timestep_{self.ite}.png')
 
     def plot_velocity_y(self, zoom_pos = []):
@@ -433,11 +409,9 @@ class Plume(Simulation):
                 options=[ ['limits', [0, 1.2]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vel y []',
@@ -449,35 +423,33 @@ class Plume(Simulation):
                 options=[ ['limits', [0, 1.2]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vel y []',
-                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'Plume @ t={np.round(self.dt*self.ite, decimals=1)} s [ Ri={self.Ri}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_velocity_y_timestep_{self.ite}.png')
 
-    
+
     def plot_geometry(self, zoom_pos = []):
         xp1 = int(self.xD + self.D*2)
         xp2 = int(self.xD + self.D*2.5)
         yp1 = int(self.Ly/2 - self.D*0.25)
         yp2 = int(self.Ly/2 + self.D*0.25)
-        
+
         plot_field(self.CYLINDER,
             plot_type=['surface'],
             options=[ ['limits', [-1, 1]],
                     ['full_zoom', False],
                     ['zoom_position', zoom_pos],
-                    ['aux_contourn', False],  
-                    ['square', [xp1,xp2,yp1,yp2]]              
+                    ['aux_contourn', False],
+                    ['square', [xp1,xp2,yp1,yp2]]
                     ],
             Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
             lx='x', ly='y',lbar='geometry',
-            ltitle=f'Plume @ [ N=[{self.Nx}x{self.Ny}] ]', 
+            ltitle=f'Plume @ [ N=[{self.Nx}x{self.Ny}] ]',
             save=True, filename=f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_geometry.png')
 
     def save_variables(self):
@@ -507,7 +479,7 @@ class Plume(Simulation):
             torch.set_default_dtype(torch.float64) #Torch
 
             '''NOTICE: since both backends (phiflow & torch) are defined as default here. It is not necessary nor recommended
-                to define its precision on other parts of the code. Except for very specific purpouses.            
+                to define its precision on other parts of the code. Except for very specific purpouses.
             '''
 
         if self.GPU == True:
@@ -515,7 +487,7 @@ class Plume(Simulation):
             torch.set_default_tensor_type('torch.cuda.FloatTensor') #Torch
 
             '''NOTICE: since both backends (phiflow & torch) are defined as default here. It is not necessary nor recommended
-                to use .cuda() in other parts of the software. Since then, will probably create internal conflicts when using 
+                to use .cuda() in other parts of the software. Since then, will probably create internal conflicts when using
                 multiple tensors located in different devices.
 
                 Another thing, is the .cpu() used for instance, in the plots since this doesn't provoke any conflict since always
@@ -543,7 +515,7 @@ class Plume(Simulation):
 
         self.time_recorder.record(point_name='init_iterations')
         for self.ite in range(ite_init, self.Nt):
-            
+
             #1.0.Check if simulation time exceeded maximum allocation (24h gpu on pando -> 23h)
             _now_sim.record()
             torch.cuda.synchronize()
@@ -569,13 +541,6 @@ class Plume(Simulation):
 
                 #1.3.Apply Boundary Conditions
                 self.velocity = self.velocity * (1 - self.INFLOW) + self.INFLOW * (0, 1)
-                #TODO: el inflow, como init dentro de bc functions
-
-
-
-                #if self.sim_method == 'CG' or self.sim_method == 'convnet':
-                #    self.velocity = apply_boundaries(self.velocity, self.bc_mask, self.bc_value)
-                #    self.time_recorder.record(point_name=f'ite_{self.ite}_>apply_bc')
 
                 buoyancy_force = self.density * self.gravity * (self.g_x, self.g_y) >> self.velocity  # resamples smoke to velocity sample points
                 self.velocity = advect.semi_lagrangian(self.velocity, self.velocity, self.dt) + buoyancy_force
@@ -583,25 +548,14 @@ class Plume(Simulation):
                 #1.4.Solve Poisson Equation
                 self.solve_poisson()
 
-                #1.5.Reenforce Boundary Conditions 
-                #if self.sim_method == 'CG' or self.sim_method == 'convnet':
-                #    self.velocity = apply_boundaries(self.velocity, self.bc_mask, self.bc_value)
-                #    self.time_recorder.record(point_name=f'ite_{self.ite}_>reinforce_bc')
-                #include init and inflow????
-
-            #except:
-                #ERROR OF CONVERGENCE, STOP SIMULATION + SAVE GIF, ETC
-                #TODO: log of failure  f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_log.log'
-                #break 
-
 
             #2.POST-PROCESSING
             self.time_recorder.record(point_name=f'ite_{self.ite}_>init_post')
             if True: #try:
 
-                #2.3.PLOT RESULTS #TODO: multithrad
+                #2.3.PLOT RESULTS
                 if self.plot_field and self.ite%self.plot_x_ite == 0:
-                    zoom_pos=[np.int(self.Lx/2 - 1.5*self.input_rad), np.int(self.Lx/2 + 1.5*self.input_rad), 
+                    zoom_pos=[np.int(self.Lx/2 - 1.5*self.input_rad), np.int(self.Lx/2 + 1.5*self.input_rad),
                             0, 10]
 
                     self.plot_pressure(zoom_pos = zoom_pos)
@@ -634,7 +588,7 @@ class Plume(Simulation):
                     self.vel_mask_x_field.append(self.vel_mask.staggered_tensor().tensors[0]._native.cpu().numpy())
                     self.vel_mask_y_field.append(self.vel_mask.staggered_tensor().tensors[1]._native.cpu().numpy())
                     self.iteration_field.append(self.ite)
-                
+
                 if self.ite%self.save_post_x_ite == 0 and self.ite> self.min_ite:
                     filename3 = self.out_dir + '/P_output_{0:05}'.format(self.ite)
                     np.save(filename3,self.pressure.values._native.cpu().numpy())
@@ -650,20 +604,12 @@ class Plume(Simulation):
                     filename7 = self.out_dir + '/Rho_NN_output_{0:05}'.format(self.ite)
                     np.save(filename7, self.density.values._native.cpu().numpy())
 
-
-
-            #except:
-            #    pass
-            
-
-            #3.SAVE RESULTS 
+            #3.SAVE RESULTS
             self.time_recorder.record(point_name=f'ite_{self.ite}_>init_save_results')
             if True: #try:
                 self.save_variables()
-            #except:
-            #    pass
-            self.time_recorder.record(point_name=f'ite_{self.ite}_>end_save_results')
 
+            self.time_recorder.record(point_name=f'ite_{self.ite}_>end_save_results')
 
             self.bar.next()
         self.bar.finish()
@@ -674,7 +620,7 @@ class Plume(Simulation):
         try:
             if self.plot_field:
                 self.plot_geometry(zoom_pos = zoom_pos)
-                
+
                 if self.plot_field_gif:
                     self.gif_pressure.build_gif()
                     self.gif_vorticity.build_gif()
@@ -684,7 +630,7 @@ class Plume(Simulation):
                     self.gif_velocity_x.build_gif()
                     self.gif_velocity_y.build_gif()
                     self.gif_distribution.build_gif()
-            
+
         except:
             pass
 
@@ -693,12 +639,10 @@ class Plume(Simulation):
             self.save_variables()
         except:
             pass
-            
+
         if self.resume:
-            #TODO: eliminate temporal files and folders
             pass
 
 
         self.time_recorder.record(point_name='run_end')
         self.time_recorder.close(save=True)
-        

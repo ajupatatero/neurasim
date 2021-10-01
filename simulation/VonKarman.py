@@ -19,12 +19,12 @@ class VonKarman(WindTunnel):
     '''
     def __init__(self,config):
         super().__init__(config)
-        
+
         self.D=config['D']
         self.xD=config['xD']
         #self.yD=config['yD']
 
-        self.Re=config['Reynolds']      
+        self.Re=config['Reynolds']
         self.viscosity=self.D/self.Re
         self.alpha=0
 
@@ -70,19 +70,19 @@ class VonKarman(WindTunnel):
         DOMAIN = Domain(x=self.Nx, y=self.Ny, boundaries=[OPEN, STICKY],bounds=Box[0:self.Lx, 0:self.Ly])
 
         #INLET BC FLOW
-        BOUNDARY_MASK = HardGeometryMask(Box[:0.5, :]) >> DOMAIN.staggered_grid()  
+        BOUNDARY_MASK = HardGeometryMask(Box[:0.5, :]) >> DOMAIN.staggered_grid()
 
         #INITIAL DESTABILIZATION
         xi1 = self.xD + 2.5*self.D
         xi2 = xi1 + self.D/2
         yi1 = self.Ly/2 - self.D/2
         yi2 = self.Ly/2 + self.D
-        INIT = HardGeometryMask(Box[xi1:xi2,yi1:yi2]) >> DOMAIN.staggered_grid()  
+        INIT = HardGeometryMask(Box[xi1:xi2,yi1:yi2]) >> DOMAIN.staggered_grid()
 
         #CYLINDER
-        obstacle = Obstacle(Sphere([self.xD, self.Ly/2], radius=self.D/2), angular_velocity=0.0)           
+        obstacle = Obstacle(Sphere([self.xD, self.Ly/2], radius=self.D/2), angular_velocity=0.0)
         FORCES_MASK = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2)) >> DOMAIN.scalar_grid()
-        self.flags += FORCES_MASK.values._native 
+        self.flags += FORCES_MASK.values._native
         #FORCES_MASK = FORCES_MASK.values._native.cpu().numpy()  in theory not necessary
 
         #INITIALIZE FIELDS
@@ -91,7 +91,7 @@ class VonKarman(WindTunnel):
         pressure = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)).cuda(),
                                      names=['batch', 'x', 'y']), DOMAIN.bounds)
         density = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)).cuda(),
-                                     names=['batch', 'x', 'y']), DOMAIN.bounds) 
+                                     names=['batch', 'x', 'y']), DOMAIN.bounds)
         vel_mask = create_from_flags(self.flags, velocity)
 
 
@@ -119,7 +119,7 @@ class VonKarman(WindTunnel):
         #ITERATION OVER TIME
         bar = Bar(f' [RE={self.Re}, Nx={self.Nx}]', max=self.Nt, suffix='%(percent)d%%')
         for ite in range(self.Nt):
-            
+
             #1.COMPUTATIONS
             try:
                 velocity_free = diffuse.explicit(velocity, self.viscosity, self.dt)
@@ -143,16 +143,16 @@ class VonKarman(WindTunnel):
                     in_U_t[:,0,:2,:] = 1
                     in_U_t[:,0,-2:,:] = 1
 
-                    data = torch.cat((in_density_t.unsqueeze(1).unsqueeze(1), 
-                                    in_U_t[:,0,:-1,:-1].unsqueeze(1).unsqueeze(1), 
-                                    in_U_t[:,1,:-1,:-1].unsqueeze(1).unsqueeze(1), 
-                                    (self.flags+1), 
+                    data = torch.cat((in_density_t.unsqueeze(1).unsqueeze(1),
+                                    in_U_t[:,0,:-1,:-1].unsqueeze(1).unsqueeze(1),
+                                    in_U_t[:,1,:-1,:-1].unsqueeze(1).unsqueeze(1),
+                                    (self.flags+1),
                                     in_density_t.unsqueeze(1).unsqueeze(1)), dim = 1)
                     data = data.transpose(-1, -2)
-                    
+
                     with torch.no_grad():
                         if self.new_train:
-                            pressure, velocity, vel_mask, div_out, div_in, time = self.model(data, velocity, 
+                            pressure, velocity, vel_mask, div_out, div_in, time = self.model(data, velocity,
                                                                         vel_mask, DOMAIN, True,  ite, self.out_dir)
                         else:
                             p, U_torch, time = self.model(data, ite, self.out_dir)
@@ -163,19 +163,17 @@ class VonKarman(WindTunnel):
 
             except:
                 #ERROR OF CONVERGENCE, STOP SIMULATION + SAVE GIF, ETC
-                #    #TODO: log of failure
-                break 
-                
+                break
+
 
             #2.POST-PROCESSING
-            if True: #try:
-                #TODO: likewise the other run -> probe class
+            if True:
                 #2.1.VELOCITY PROBE
                 Dn = self.D/self.dx
                 xp1 = int(self.Ny/3-Dn/5)
-                xp2 = int(self.Ny/3 + Dn/5) 
+                xp2 = int(self.Ny/3 + Dn/5)
                 yp1 = int(self.Ny/2 - Dn/10)
-                yp2 = int(self.Ny/2 + Dn/10) 
+                yp2 = int(self.Ny/2 + Dn/10)
                 #velocity_probe[ite] = np.mean(velocity.staggered_tensor().tensors[1]._native.cpu().numpy()[xp1:xp2,yp1:yp2])
                 velocity_probe[ite] = np.mean(velocity.staggered_tensor().tensors[1]._native.cpu().numpy()[0, xp1:xp2,yp1:yp2])
 
@@ -183,28 +181,28 @@ class VonKarman(WindTunnel):
                 hforce[ite], vforce[ite] = calculate_forces(pressure, FORCES_MASK, self.dx, self.dy)
                 #hforce[ite], vforce[ite] = calculate_forces_with_momentum(pressure, velocity, FORCES_MASK, factor=1, rho=1, dx=self.dx, dy=self.dy)
 
-            #2.3.PLOT RESULTS #TODO: multithrad
-            zoom_pos=[self.xD - self.D, self.xD + self.D, 
+            #2.3.PLOT RESULTS
+            zoom_pos=[self.xD - self.D, self.xD + self.D,
                       self.Ly/2 -self.D, self.Ly/2 + self.D]
             #edges = [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ]
 
             if ite%100== 0:
-                gif_pressure.add_frame(ite, pressure, plot_type=['surface'], 
-                        options=[ ['limits', [torch.min(pressure.values._native.cpu()), torch.max(pressure.values._native.cpu())]], 
+                gif_pressure.add_frame(ite, pressure, plot_type=['surface'],
+                        options=[ ['limits', [torch.min(pressure.values._native.cpu()), torch.max(pressure.values._native.cpu())]],
                                 ['zoom_position',zoom_pos] ],
                         lx='x', ly='y', lbar='pressure []', ltitle=f'VK @ t={np.round(self.dt*ite, decimals=2)} s [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
 
 
                 vorticity = calculate_vorticity(self.Lx,self.Ly,self.dx,self.dy,velocity)
-                gif_vorticity.add_frame(ite, vorticity, plot_type=['surface'], 
-                        options=[ ['limits', [-0.5, 0.5]], 
+                gif_vorticity.add_frame(ite, vorticity, plot_type=['surface'],
+                        options=[ ['limits', [-0.5, 0.5]],
                                 ['zoom_position',zoom_pos] ],
                         lx='x', ly='y', lbar='vorticity []', ltitle=f'VK @ t={np.round(self.dt*ite, decimals=2)} s [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
 
-            
+
                 norm_velocity = calculate_norm_velocity(velocity)
-                gif_velocity.add_frame(ite, norm_velocity, plot_type=['surface'], 
-                        options=[ ['limits', [0, 0.8]], 
+                gif_velocity.add_frame(ite, norm_velocity, plot_type=['surface'],
+                        options=[ ['limits', [0, 0.8]],
                                 ['zoom_position',zoom_pos] ],
                         lx='x', ly='y', lbar='norm velocity []', ltitle=f'VK @ t={np.round(self.dt*ite, decimals=2)} s [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
 
@@ -224,10 +222,6 @@ class VonKarman(WindTunnel):
                 plot_field(div_out, plot_type=['surface'], options=[ ['limits', [-torch.max(div_in.values._native.cpu()), torch.max(div_in.values._native.cpu())]], ['zoom_position',zoom_pos]],
                     lx='x', ly='y', lbar=' Divergence out', ltitle=f'VK @ t={np.round(self.dt*ite, decimals=2)} s [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]',
                     save=True, filename='{}/div_out_field_{}.png'.format(self.out_dir, ite))
-
-            #except:
-            #    pass
-            
 
             #3.SAVE RESULTS
             try:
@@ -254,17 +248,6 @@ class VonKarman(WindTunnel):
             except:
                 pass
 
-            
-            #4.TERMINAL INFO
-            #if ite%10== 0:
-            #    print('Forces: Vforce = {} and Hforce {}'.format(vforce[ite], hforce[ite]) )       
-
-
-
-            #5.TEMPORAL TESTING
-
-
-
             bar.next()
         bar.finish()
 
@@ -283,13 +266,13 @@ class VonKarman(WindTunnel):
         self.plot_velocity_probe()
         self.plot_power_spectrum()
         self.plot_forces_ss()
-    
+
     def plot_velocity_probe(self):
         velocity_probe = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_probe.npy')
 
         t, t_null_vel, t_upsampled, envelope, deri = detect_stationary(velocity_probe, self.Nt, self.dt)
 
-        fig, ax = plt.subplots()           
+        fig, ax = plt.subplots()
         ax.plot(t_upsampled, envelope,'r', label="Filtered Envelope"); #overlay the extracted envelope
         ax.plot(t, velocity_probe, label="Velocity")
         ax.plot(t_upsampled[:len(deri)], deri,'g--',label="Envelope Derivate")
@@ -298,16 +281,11 @@ class VonKarman(WindTunnel):
             ax.plot([t[t_null_vel], t[t_null_vel] ],[max(velocity_probe), min(velocity_probe)],'r--', label="Stationary Regime")
         except:
             pass
-            
+
         ax.set(xlabel='time [s]', ylabel='vertical velocity', title=f'Velocity Probe [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
         ax.legend()
 
         #GRID
-        #TODO agrupar grid settings en una forma
-        # Set axis ranges; by default this will put major ticks every 25.
-        #ax.set_xlim(0, 200)
-        #ax.set_ylim(0, 200)
-
         # Change major ticks to show every x.
         ax.xaxis.set_major_locator(MultipleLocator((self.Nt*self.dt)/10))
         ax.yaxis.set_major_locator(MultipleLocator(0.2))
@@ -324,15 +302,15 @@ class VonKarman(WindTunnel):
         #plt.show()
         fig.savefig(f"{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_oscil.png")
         plt.close()
-    
+
     def plot_power_spectrum(self):
         velocity_probe = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_probe.npy')
         xf, yf, xffull, yffull, f, dF, ffull, dFfull = compute_spectrum(velocity_probe,self.Nt,self.dt)
-        
+
         fig, ax = plt.subplots()
         plt.loglog(xf, yf, label="Stationary")
         plt.loglog(f, yf[np.argmax(yf)],'rx',linewidth=2)
-        
+
         plt.loglog(xffull, yffull, label="Full")
 
         ax.set(xlabel='frequency [Hz]', title=f'Power Spectrum [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ] F={round(f,5)} $\pm$ {round(dF,6)} Hz')
@@ -345,9 +323,7 @@ class VonKarman(WindTunnel):
     def plot_forces(self):
         vforce = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vforce.npy')
         hforce = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_hforce.npy')
-        #velocity_probe = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_probe.npy')
 
-        #t, t_null_vel, t_upsampled, envelope, deri = detect_stationary(velocity_probe, self.Nt, self.dt)
         t, t_null_vel, _, _, _ = detect_stationary(vforce, self.Nt, self.dt)
 
         if t_null_vel <= self.Nt/3:
@@ -357,21 +333,19 @@ class VonKarman(WindTunnel):
         density=1
         V0=1
         Cl = (vforce*2)/(density*V0*V0*self.D)
-        Cd = (hforce*2)/(density*V0*V0*self.D) 
+        Cd = (hforce*2)/(density*V0*V0*self.D)
 
         fig, ax = plt.subplots()
         ax.plot(t, Cl, label="Cl")
         ax.plot(t, Cd, label="Cd")
 
-        ax.plot([t[t_null_vel], t[t_null_vel] ],[np.max([np.max(Cl[t_null_vel:]), np.max(Cd[t_null_vel:])] )*1.1, 
+        ax.plot([t[t_null_vel], t[t_null_vel] ],[np.max([np.max(Cl[t_null_vel:]), np.max(Cd[t_null_vel:])] )*1.1,
                  np.min( [ np.min(Cl[t_null_vel:]), np.min(Cd[t_null_vel:]) ] )*1.1],'r--', label="Stationary Regime")
 
         ax.set(xlabel='time [s]', ylabel='Coefficient', title=f'Force probe [ Alpha={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
         ax.legend()
-                
-        ax.set_ylim([ np.min( [ np.min(Cl[t_null_vel:]), np.min(Cd[t_null_vel:]) ] )*1.1 , np.max([np.max(Cl[t_null_vel:]), np.max(Cd[t_null_vel:])] )*1.1 ])
 
-        #ax.set_ylim([-5,5])
+        ax.set_ylim([ np.min( [ np.min(Cl[t_null_vel:]), np.min(Cd[t_null_vel:]) ] )*1.1 , np.max([np.max(Cl[t_null_vel:]), np.max(Cd[t_null_vel:])] )*1.1 ])
 
         ax.xaxis.set_major_locator(MultipleLocator((self.Nt*self.dt)/10))
         ax.xaxis.set_minor_locator(AutoMinorLocator(4))
@@ -385,7 +359,7 @@ class VonKarman(WindTunnel):
     def print_mean_forces(self):
         vforce = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vforce.npy')
         hforce = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_hforce.npy')
-           
+
         _, t_null_vel, _, _, _ = detect_stationary(vforce, self.Nt, self.dt)
 
         if t_null_vel <= self.Nt/3:
@@ -395,13 +369,10 @@ class VonKarman(WindTunnel):
         density=1
         V0=1
         Cl = (vforce*2)/(density*V0*V0*self.D)
-        Cd = (hforce*2)/(density*V0*V0*self.D) 
+        Cd = (hforce*2)/(density*V0*V0*self.D)
 
         Cl_mean = np.mean(Cl[t_null_vel:])
         Cd_mean = np.mean(Cd[t_null_vel:])
-
-        #print(Cl_mean)
-        #print(Cd_mean)
 
         sourceFile = open(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_CL_CD_mean.txt', 'w')
         print(f'MEAN CL: {Cl_mean}, MEAN CD: {Cd_mean}', file = sourceFile)
@@ -410,7 +381,7 @@ class VonKarman(WindTunnel):
     def plot_forces_ss(self):
         vforce = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vforce.npy')
         hforce = np.load(f'{self.in_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_hforce.npy')
-    
+
         _, t_null_vel, _, _, _ = detect_stationary(vforce, self.Nt, self.dt)
 
         if t_null_vel <= self.Nt/3:
@@ -424,7 +395,7 @@ class VonKarman(WindTunnel):
 
         fig, ax = plt.subplots()
         ax.plot(hforce[t_null_vel:], vforce[t_null_vel:], label="Cl/Cd")
-    
+
         ax.set(xlabel='Cd [·]', ylabel='Cl [·]', title=f'Phase Diagram [ Alpha={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
         ax.legend()
 
@@ -442,7 +413,7 @@ class VonKarman(WindTunnel):
         velocity_y_field = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy')
         pressure_field = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_pressure_field.npy')
         iteration_field = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_iteration_field.npy')
-        
+
         plot_snapshots(iteration_field, pressure_field, f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_pressure_field',
                 self.dt, self.Lx, self.Ly, self.dx, self.dy)
 
@@ -464,27 +435,27 @@ class VonKarman_rotative(VonKarman):
         except:
             self.factor = 1
 
-        self.time_recorder = Timer(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_')          
+        self.time_recorder = Timer(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_')
 
     def define_simulation_geometry(self):
         self.time_recorder.record(point_name='init_define_simulation_geometry')
 
         self.DOMAIN = Domain(x=self.Nx, y=self.Ny, boundaries=[self.BCx, self.BCy], bounds=Box[0:self.Lx, 0:self.Ly])
-        
-        self.INFLOW = HardGeometryMask(Box[:1, :]) >> self.DOMAIN.staggered_grid()  
+
+        self.INFLOW = HardGeometryMask(Box[:1, :]) >> self.DOMAIN.staggered_grid()
 
         self.INFLOW_2 = HardGeometryMask(Box[:3, :]) >> self.DOMAIN.staggered_grid()
         self.OUTFLOW = HardGeometryMask(Box[-3:, :]) >> self.DOMAIN.staggered_grid()
         self.DOWN_WALL = HardGeometryMask(Box[:, :3]) >> self.DOMAIN.staggered_grid()
         self.UP_WALL = HardGeometryMask(Box[:, -3:]) >> self.DOMAIN.staggered_grid()
 
-        self.cylinder = Obstacle(Sphere([self.xD, self.Ly/2], radius=self.D/2), angular_velocity=self.w)           
-        self.CYLINDER = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2 )) >> self.DOMAIN.scalar_grid() 
+        self.cylinder = Obstacle(Sphere([self.xD, self.Ly/2], radius=self.D/2), angular_velocity=self.w)
+        self.CYLINDER = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2 )) >> self.DOMAIN.scalar_grid()
         #TODO: hacer que obstacle sea input ok de forces() y hacer obs.geom >>
         self.flags += self.CYLINDER.values._native.transpose(-1, -2) #TODO: clean, all with one mask only
 
 
-        self.CYLINDER_2 = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2 + 2*self.dx )) >> self.DOMAIN.scalar_grid() 
+        self.CYLINDER_2 = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2 + 2*self.dx )) >> self.DOMAIN.scalar_grid()
 
 
         if not self.sim_method == 'PHI':
@@ -494,23 +465,22 @@ class VonKarman_rotative(VonKarman):
 
     def define_simulation_fields(self):
         self.time_recorder.record(point_name='init_define_simulation_fields')
-        
+
         #INITIAL DESTABILIZATION
-        xi1 = self.xD + 1*self.D  #2.5
+        xi1 = self.xD + 1*self.D
         xi2 = xi1 + self.D/2
         yi1 = self.Ly/2 - self.D/2
         yi2 = self.Ly/2 + self.D/2
-        self.INIT = HardGeometryMask(Box[xi1:xi2,yi1:yi2]) >> self.DOMAIN.staggered_grid()  
-        self.INIT_transition = 10 # 1000 
+        self.INIT = HardGeometryMask(Box[xi1:xi2,yi1:yi2]) >> self.DOMAIN.staggered_grid()
+        self.INIT_transition = 10
 
         #Initialize the fields
         bsz = 1
-        
+
         if self.resume:
             #Import the saved fields
-            
-            velx = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_x_field.npy')[-1,0,:,:] 
-            vely = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy')[-1,0,:,:] 
+            velx = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_x_field.npy')[-1,0,:,:]
+            vely = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy')[-1,0,:,:]
 
             velx = torch.from_numpy(velx).cuda()
             vely = torch.from_numpy(vely).cuda()
@@ -525,12 +495,9 @@ class VonKarman_rotative(VonKarman):
             tensor_U_unstack = unstack_staggered_tensor(tensor_U)
             self.velocity =  StaggeredGrid(tensor_U_unstack, self.DOMAIN.bounds)
 
-            #TODO: use the staggered function, verify if ok
-
-            
             try:
-                velmaskx = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vel_mask_x_field.npy')[-1,0,:,:] 
-                velmasky = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vel_mask_y_field.npy')[-1,0,:,:] 
+                velmaskx = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vel_mask_x_field.npy')[-1,0,:,:]
+                velmasky = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vel_mask_y_field.npy')[-1,0,:,:]
 
                 velmaskx = torch.from_numpy(velmaskx).cuda()
                 velmasky = torch.from_numpy(velmasky).cuda()
@@ -545,18 +512,18 @@ class VonKarman_rotative(VonKarman):
                 tensor_U_mask_unstack = unstack_staggered_tensor(tensor_U_mask)
                 self.vel_mask =  StaggeredGrid(tensor_U_mask_unstack, self.DOMAIN.bounds)
             except:
-                self.vel_mask = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1) 
+                self.vel_mask = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1)
                 print('the vel mask was not imported in resume')
 
             pfield = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_pressure_field.npy')[-1,:,:,:]
             self.pressure = CenteredGrid(tensor(torch.from_numpy(pfield).cuda(), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
 
             self.density = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)).cuda(), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
-     
+
         else:
             #Create the fields
             self.velocity = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1) *(1,0)
-            self.vel_mask = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1) 
+            self.vel_mask = ((self.DOMAIN.staggered_grid(Noise(batch=bsz)) * 0 )+1)
             self.pressure = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
             self.density = CenteredGrid(tensor(torch.zeros((bsz, self.Nx, self.Ny)), names=['batch', 'x', 'y']), self.DOMAIN.bounds)
 
@@ -564,13 +531,13 @@ class VonKarman_rotative(VonKarman):
 
     def initialize_aux_variables(self):
         self.time_recorder.record(point_name='init_initialize_aux_variables')
-        
+
         #Output Variables Initialization
         if self.resume:
             if self.post_computations:
-                self.velocity_probe = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_probe.npy') 
-                self.vforce = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vforce.npy') 
-                self.hforce = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_hforce.npy') 
+                self.velocity_probe = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_probe.npy')
+                self.vforce = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vforce.npy')
+                self.hforce = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_hforce.npy')
 
             self.velocity_x_field=np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_x_field.npy').tolist()
             self.velocity_y_field=np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy').tolist()
@@ -585,7 +552,7 @@ class VonKarman_rotative(VonKarman):
                 self.vel_mask_y_field=[]
 
         else:
-            if self.post_computations: 
+            if self.post_computations:
                 self.velocity_probe=np.zeros(self.Nt)
                 self.vforce=np.zeros(self.Nt)
                 self.hforce=np.zeros(self.Nt)
@@ -615,9 +582,9 @@ class VonKarman_rotative(VonKarman):
 
             self.velocity, self.pressure, self._iterations, self.div_in, time_CG = fluid.make_incompressible_BC(self.velocity, self.DOMAIN, (), pressure_guess=self.pressure,
             solve_params=math.LinearSolve(absolute_tolerance = self.precision, max_iterations = self.max_iterations ), solver=self.sim_method)
-            
+
             self.time_recorder.add_single_interval(time_CG, interval_name = f'ite_{self.ite}_>CG_inference_interval')
-            
+
             self.div_out = divergence(self.velocity)
 
             self.time_recorder.record(point_name=f'ite_{self.ite}_>end_poisson__CG')
@@ -636,31 +603,26 @@ class VonKarman_rotative(VonKarman):
             self.time_recorder.record(point_name=f'ite_{self.ite}_>init_poisson__convnet')
 
             if self.ite<int(self.ite_transition):
-                #self.velocity, self.pressure, self._iterations, self.div_in = fluid.make_incompressible(self.velocity, self.DOMAIN, (), pressure_guess=self.pressure,
-                #solve_params=math.LinearSolve(absolute_tolerance = self.precision, max_iterations = self.max_iterations) )
 
                 self.velocity, self.pressure, self._iterations, self.div_in, time_CG = fluid.make_incompressible_BC(self.velocity, self.DOMAIN, (), pressure_guess=self.pressure,
                 solve_params=math.LinearSolve(absolute_tolerance = self.precision, max_iterations = self.max_iterations ), solver=self.sim_method)
 
                 self.time_recorder.add_single_interval(time_CG, interval_name = f'ite_{self.ite}_>CG_inference_interval')
-                
+
                 self.div_out = divergence(self.velocity)
             else:
                 in_density_t = self.density.values._native.transpose(-1, -2)
                 in_U_t = torch.cat((self.velocity.staggered_tensor().tensors[0]._native.transpose(-1, -2).unsqueeze(1),
                             self.velocity.staggered_tensor().tensors[1]._native.transpose(-1, -2).unsqueeze(1)), dim=1)
 
-                #in_U_t[:,0,:-1,:-1] = in_U_t[:,0,:-1,:-1] * (1-self.flags)
-                #in_U_t[:,1,:-1,:-1] = in_U_t[:,1,:-1,:-1] * (1-self.flags)
                 in_U_t[:,0, :, :2] = 1
                 in_U_t[:,0, :, -2:] = 1
 
-                data = torch.cat((in_density_t.unsqueeze(1).unsqueeze(1), 
-                            in_U_t[:,0,:-1,:-1].unsqueeze(1).unsqueeze(1), 
-                            in_U_t[:,1,:-1,:-1].unsqueeze(1).unsqueeze(1), 
-                            (self.flags+1), 
+                data = torch.cat((in_density_t.unsqueeze(1).unsqueeze(1),
+                            in_U_t[:,0,:-1,:-1].unsqueeze(1).unsqueeze(1),
+                            in_U_t[:,1,:-1,:-1].unsqueeze(1).unsqueeze(1),
+                            (self.flags+1),
                             in_density_t.unsqueeze(1).unsqueeze(1)), dim = 1)
-                #data = data.transpose(-1, -2)
 
                 with torch.no_grad():
                     if self.new_train:
@@ -671,10 +633,10 @@ class VonKarman_rotative(VonKarman):
                         UDiv_CG[:, 0, :, :, :2] = 1.0
                         self.velocity, _ = load_values(UDiv_CG, 1-self.flags, self.DOMAIN)
 
-                        self.pressure, self.velocity, self.div_out, self.div_in, time_Unet = self.model(self.velocity, 1-self.flags, 
+                        self.pressure, self.velocity, self.div_out, self.div_in, time_Unet = self.model(self.velocity, 1-self.flags,
                                     self.DOMAIN, self.config_norm, self.ite, 0, 'vk_inside')
 
-                        time_Unet = float(time_Unet[0]) #to pick the total the rest are steps                        
+                        time_Unet = float(time_Unet[0]) #to pick the total the rest are steps
                         self.time_recorder.add_single_interval(time_Unet, interval_name = f'ite_{self.ite}_>UNET_inference_interval')
 
                     else:
@@ -702,11 +664,9 @@ class VonKarman_rotative(VonKarman):
                 options=[ ['limits', [-0.5, 0.5]],
                 ['full_zoom', True],
                 ['zoom_position', zoom_pos],
-                #['edges',edges],
-                #['square', [x1,x2,x3,x4]],
                 ['aux_contourn', True],
                 ['indeces', False],
-                ['grid', False]                                    
+                ['grid', False]
                 ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='pressure []',
@@ -718,27 +678,24 @@ class VonKarman_rotative(VonKarman):
                 options=[ ['limits', [-0.5, 0.5]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        ['aux_contourn', True],                
+                        ['aux_contourn', True],
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='pressure []',
-                ltitle=f'VK @ t={np.round(self.dt*self.ite, decimals=1)} s [ A={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'VK @ t={np.round(self.dt*self.ite, decimals=1)} s [ A={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_pressure_timestep_{self.ite}.png')
 
     def plot_vorticity(self, zoom_pos = []):
-        vorticity = calculate_vorticity(self.Lx,self.Ly,self.dx,self.dy,self.velocity)           
-        
+        vorticity = calculate_vorticity(self.Lx,self.Ly,self.dx,self.dy,self.velocity)
+
         if self.plot_field_gif:
             self.gif_vorticity.add_frame(self.ite, vorticity,
                 plot_type=['surface'],
                 options=[ ['limits', [-0.2, 0.5]],
                         ['full_zoom', False],
-                        #['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                    
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vorticity []',
@@ -750,86 +707,83 @@ class VonKarman_rotative(VonKarman):
                 options=[ ['limits', [-0.2, 0.5]],
                         ['full_zoom', False],
                         ['zoom_position', zoom_pos],
-                        ['aux_contourn', True],                
+                        ['aux_contourn', True],
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='vorticity []',
-                ltitle=f'VK @ t={np.round(self.dt*self.ite, decimals=1)} s [ A={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]', 
+                ltitle=f'VK @ t={np.round(self.dt*self.ite, decimals=1)} s [ A={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]',
                 save=True, filename=f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vorticity_timestep_{self.ite}.png')
 
     def plot_velocity_norm(self, zoom_pos = []):
-        norm_velocity = calculate_norm_velocity(self.velocity)            
-        
+        norm_velocity = calculate_norm_velocity(self.velocity)
+
         if self.plot_field_gif:
             self.gif_velocity.add_frame(self.ite, norm_velocity,
                 plot_type=['surface'],
                 options=[ ['limits', [0, 0.8]],
                         ['full_zoom', False],
-                        #['zoom_position', zoom_pos],
-                        #['edges',edges],
-                        #['square', [x1,x2,x3,x4]],
                         ['aux_contourn', True],
                         ['indeces', False],
-                        ['grid', False]                                   
+                        ['grid', False]
                         ],
                 Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
                 lx='x', ly='y',lbar='norm velocity []',
                 ltitle=f'VK @ t={np.round(self.dt*self.ite, decimals=1)} s [ A={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
-             
+
     def plot_cp(self):
         pressure_ref = np.mean(self.pressure.values._native.cpu().numpy()[0][4,:])
-                
+
         cp = calculate_cp(self.pressure, pressure_ref=pressure_ref, rho_ref=1, vel_ref=1)
-        
+
         if self.plot_field_gif:
             self.gif_distribution.add_frame2(self.ite, cp, self.CYLINDER_2, plot_type=['full'],
                                         options=[['limits', [-2, 1.2] ]
                                         ],
                                         lx='angle', ly='pressure coeficient', ltitle=f'Cp @ t={np.round(self.dt*self.ite, decimals=1)} s [ A={self.alpha}, Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
-    
+
     def reconstruct_velocity_probe(self):
-        
+
         xp1 = int((self.xD + self.D*2)/self.dx)
         xp2 = int((self.xD + self.D*2.5)/self.dx)
         yp1 = int((self.Ly/2 - self.D*0.25)/self.dy)
         yp2 = int((self.Ly/2 + self.D*0.25)/self.dy)
 
-    
+
         print('calculate_velocity_probe>> read file')
         print('BE AWARE THAT ONLY THE SAVE ITERATIONS WILL BE CALCULATED-> THE OTHERS 0')
         velocity_y_field = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy')
         iteration_field = np.load(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_iteration_field.npy')
-             
+
         velocity_probe=np.zeros(self.Nt)
         for i, ite in enumerate(iteration_field):
             velocity_probe[ite] = np.mean(velocity_y_field[i][0][xp1:xp2,yp1:yp2]) #to squeeze
         np.save(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_probe.npy', velocity_probe)
 
-    def calculate_velocity_probe(self): 
+    def calculate_velocity_probe(self):
         xp1 = int((self.xD + self.D*2)/self.dx)
         xp2 = int((self.xD + self.D*2.5)/self.dx)
         yp1 = int((self.Ly/2 - self.D*0.25)/self.dy)
         yp2 = int((self.Ly/2 + self.D*0.25)/self.dy)
 
         self.velocity_probe[self.ite] = np.mean(self.velocity.staggered_tensor().tensors[1]._native.cpu().squeeze().numpy()[xp1:xp2,yp1:yp2])
-      
+
     def plot_geometry(self, zoom_pos = []):
         xp1 = int(self.xD + self.D*2)
         xp2 = int(self.xD + self.D*2.5)
         yp1 = int(self.Ly/2 - self.D*0.25)
         yp2 = int(self.Ly/2 + self.D*0.25)
-        
+
         plot_field(self.CYLINDER,
             plot_type=['surface'],
             options=[ ['limits', [-1, 1]],
                     ['full_zoom', False],
                     ['zoom_position', zoom_pos],
-                    ['aux_contourn', False],  
-                    ['square', [xp1,xp2,yp1,yp2]]              
+                    ['aux_contourn', False],
+                    ['square', [xp1,xp2,yp1,yp2]]
                     ],
             Lx=self.Lx, Ly=self.Ly, dx=self.dx, dy=self.dy,
             lx='x', ly='y',lbar='geometry',
-            ltitle=f'VK @ [ N=[{self.Nx}x{self.Ny}] ]', 
+            ltitle=f'VK @ [ N=[{self.Nx}x{self.Ny}] ]',
             save=True, filename=f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_geometry.png')
 
     def save_variables(self):
@@ -864,7 +818,7 @@ class VonKarman_rotative(VonKarman):
             torch.set_default_dtype(torch.float64) #Torch
 
             '''NOTICE: since both backends (phiflow & torch) are defined as default here. It is not necessary nor recommended
-                to define its precision on other parts of the code. Except for very specific purpouses.            
+                to define its precision on other parts of the code. Except for very specific purpouses.
             '''
 
         if self.GPU == True:
@@ -872,7 +826,7 @@ class VonKarman_rotative(VonKarman):
             torch.set_default_tensor_type('torch.cuda.FloatTensor') #Torch
 
             '''NOTICE: since both backends (phiflow & torch) are defined as default here. It is not necessary nor recommended
-                to use .cuda() in other parts of the software. Since then, will probably create internal conflicts when using 
+                to use .cuda() in other parts of the software. Since then, will probably create internal conflicts when using
                 multiple tensors located in different devices.
 
                 Another thing, is the .cpu() used for instance, in the plots since this doesn't provoke any conflict since always
@@ -900,7 +854,7 @@ class VonKarman_rotative(VonKarman):
 
         self.time_recorder.record(point_name='init_iterations')
         for self.ite in range(ite_init, self.Nt):
-            
+
             #1.0.Check if simulation time exceeded maximum allocation (24h gpu on pando -> 23h)
             _now_sim.record()
             torch.cuda.synchronize()
@@ -918,19 +872,18 @@ class VonKarman_rotative(VonKarman):
                 else:
                     print('DIFFUSION STEP AVOIDED SINCE RE >= 50000')
                     self.velocity_free = self.velocity
-                    
+
                 #1.2.Advect Velocity
                 self.velocity = advect.semi_lagrangian(self.velocity_free, self.velocity, self.dt)
 
                 if torch.isnan(self.velocity.staggered_tensor().tensors[0]._native).any():
-                    print('Nan in Domain') 
+                    print('Nan in Domain')
                     self.velocity = change_nan_zero(self.velocity, self.DOMAIN)
 
                 self.time_recorder.record(point_name=f'ite_{self.ite}_>advect')
 
                 #1.3.Apply Boundary Conditions
                 self.velocity = self.velocity * (1 - self.INFLOW) + self.INFLOW * (1, 0) + self.INIT*(0,0.5) if self.ite<int(self.INIT_transition) else self.velocity * (1 - self.INFLOW) + self.INFLOW * (1, 0)
-                #TODO: el inflow, como init dentro de bc functions
 
                 if self.sim_method == 'CG' or self.sim_method == 'convnet':
                     self.velocity = apply_boundaries(self.velocity, self.bc_mask, self.bc_value)
@@ -939,17 +892,10 @@ class VonKarman_rotative(VonKarman):
                 #1.4.Solve Poisson Equation
                 self.solve_poisson()
 
-                #1.5.Reenforce Boundary Conditions 
+                #1.5.Reenforce Boundary Conditions
                 if self.sim_method == 'CG' or self.sim_method == 'convnet':
                     self.velocity = apply_boundaries(self.velocity, self.bc_mask, self.bc_value)
                     self.time_recorder.record(point_name=f'ite_{self.ite}_>reinforce_bc')
-                #include init and inflow????
-
-            #except:
-                #ERROR OF CONVERGENCE, STOP SIMULATION + SAVE GIF, ETC
-                #TODO: log of failure  f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_log.log'
-                #break 
-
 
             #2.POST-PROCESSING
             self.time_recorder.record(point_name=f'ite_{self.ite}_>init_post')
@@ -964,11 +910,11 @@ class VonKarman_rotative(VonKarman):
                     #hforce[ite], vforce[ite] = calculate_forces_with_momentum(pressure, velocity, FORCES_MASK, factor=1, rho=1, dx=self.dx, dy=self.dy)
                     self.time_recorder.record(point_name=f'ite_{self.ite}_>forces')
 
-                #2.3.PLOT RESULTS #TODO: multithrad
+                #2.3.PLOT RESULTS
                 if self.plot_field and self.ite%self.plot_x_ite == 0:
-                    zoom_pos=[self.xD - self.D, self.xD + self.D, 
+                    zoom_pos=[self.xD - self.D, self.xD + self.D,
                             self.Ly/2 -self.D, self.Ly/2 + self.D]
-                        
+
                     self.plot_pressure(zoom_pos = zoom_pos)
                     self.time_recorder.record(point_name=f'ite_{self.ite}_>pressure')
 
@@ -989,7 +935,7 @@ class VonKarman_rotative(VonKarman):
                     self.vel_mask_x_field.append(self.vel_mask.staggered_tensor().tensors[0]._native.cpu().numpy())
                     self.vel_mask_y_field.append(self.vel_mask.staggered_tensor().tensors[1]._native.cpu().numpy())
                     self.iteration_field.append(self.ite)
-                
+
                 if self.ite%self.save_post_x_ite == 0 and self.ite> self.min_ite:
                     filename3 = self.out_dir + '/P_output_{0:05}'.format(self.ite)
                     np.save(filename3,self.pressure.values._native.cpu().numpy())
@@ -1003,22 +949,12 @@ class VonKarman_rotative(VonKarman):
                     np.save(filename6, self.velocity.staggered_tensor().tensors[1]._native.cpu().numpy()[0,:-1,:-1])
 
 
-
-            #except:
-            #    pass
-            
-
-            #3.SAVE RESULTS 
+            #3.SAVE RESULTS
             self.time_recorder.record(point_name=f'ite_{self.ite}_>init_save_results')
-            if True: #try:
+            if True:
                 self.save_variables()
-            #except:
-            #    pass
+
             self.time_recorder.record(point_name=f'ite_{self.ite}_>end_save_results')
-
-
-            #4.TEMPORAL TESTING
-
 
             self.bar.next()
         self.bar.finish()
@@ -1029,17 +965,16 @@ class VonKarman_rotative(VonKarman):
         try:
             if self.plot_field:
                 self.plot_geometry(zoom_pos = zoom_pos)
-                
+
                 if self.plot_field_gif:
                     self.gif_pressure.build_gif()
                     self.gif_vorticity.build_gif()
                     self.gif_velocity.build_gif()
                     self.gif_distribution.build_gif()
-            
+
             if self.post_computations:
                 self.plot_forces()
                 self.plot_forces_ss()
-                #self.print_mean_forces()
         except:
             pass
 
@@ -1048,12 +983,10 @@ class VonKarman_rotative(VonKarman):
             self.save_variables()
         except:
             pass
-            
+
         if self.resume:
-            #TODO: eliminate temporal files and folders
             pass
 
 
         self.time_recorder.record(point_name='run_end')
         self.time_recorder.close(save=True)
-        
