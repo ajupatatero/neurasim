@@ -50,8 +50,8 @@ def normalize_to(target: Tensor, source: Tensor, epsilon=1e-5):
       target: a tensor
       source: a tensor or number
       epsilon: small number to prevent division by zero or None. (Default value = 1e-5)
-      target: Tensor: 
-      source: Tensor: 
+      target: Tensor:
+      source: Tensor:
 
     Returns:
       normalized tensor of the same shape as target
@@ -142,7 +142,7 @@ def abs_square(complex):
 #     assert difference in ('central', 'forward', 'backward'), difference
 #     rank = spatial_rank(tensor)
 #     if difference == 'forward':
-#         return _divergence_nd(tensor, padding, (0, 1), dims) / dx ** rank  # TODO why dx^rank?
+#         return _divergence_nd(tensor, padding, (0, 1), dims) / dx ** rank
 #     elif difference == 'backward':
 #         return _divergence_nd(tensor, padding, (-1, 0), dims) / dx ** rank
 #     else:
@@ -176,8 +176,8 @@ def shift(x: Tensor,
       dims: Dimensions along which to shift, defaults to None
       padding: padding to be performed at the boundary, defaults to extrapolation.BOUNDARY
       stack_dim: dimensions to be stacked, defaults to 'shift'
-      x: Tensor: 
-      offsets: tuple: 
+      x: Tensor:
+      offsets: tuple:
       dims: tuple or None:  (Default value = None)
       padding: Extrapolation or None:  (Default value = extrapolation.BOUNDARY)
       stack_dim: str or None:  (Default value = 'shift')
@@ -256,7 +256,7 @@ def gradient(grid: Tensor,
       difference: type of difference, one of ('forward', 'backward', 'central') (default 'forward')
       padding: tensor padding mode
       stack_dim: name of the new vector dimension listing the spatial_gradient w.r.t. the various axes
-      grid: Tensor: 
+      grid: Tensor:
       dx: float or int:  (Default value = 1)
       difference: str:  (Default value = 'central')
       padding: Extrapolation or None:  (Default value = extrapolation.BOUNDARY)
@@ -296,7 +296,7 @@ def laplace(x: Tensor,
       dx: scalar or 1d tensor
       padding: extrapolation
       dims: The second derivative along these dimensions is summed over
-      x: Tensor: 
+      x: Tensor:
       dx: Tensor or float:  (Default value = 1)
       padding: Extrapolation:  (Default value = extrapolation.BOUNDARY)
       dims: tuple or None:  (Default value = None)
@@ -320,9 +320,9 @@ def fourier_laplace(grid: Tensor,
                     times: int = 1):
     """
     Applies the spatial laplace operator to the given tensor with periodic boundary conditions.
-    
+
     *Note:* The results of `fourier_laplace` and `laplace` are close but not identical.
-    
+
     This implementation computes the laplace operator in Fourier space.
     The result for periodic fields is exact, i.e. no numerical instabilities can occur, even for higher-order derivatives.
 
@@ -330,8 +330,8 @@ def fourier_laplace(grid: Tensor,
       grid: tensor, assumed to have periodic boundary conditions
       dx: distance between grid points, tensor-like, scalar or vector
       times: number of times the laplace operator is applied. The computational cost is independent of this parameter.
-      grid: Tensor: 
-      dx: Tensor or Shape or float or list or tuple: 
+      grid: Tensor:
+      dx: Tensor or Shape or float or list or tuple:
       times: int:  (Default value = 1)
 
     Returns:
@@ -352,8 +352,8 @@ def fourier_poisson(grid: Tensor,
     Inverse operation to `fourier_laplace`.
 
     Args:
-      grid: Tensor: 
-      dx: Tensor or Shape or float or list or tuple: 
+      grid: Tensor:
+      dx: Tensor or Shape or float or list or tuple:
       times: int:  (Default value = 1)
 
     Returns:
@@ -380,7 +380,7 @@ def downsample2x(grid: Tensor,
       grid: full size grid
       padding: grid extrapolation. Used to insert an additional value for odd spatial dims
       dims: dims along which down-sampling is applied. If None, down-sample along all spatial dims.
-      grid: Tensor: 
+      grid: Tensor:
       padding: Extrapolation:  (Default value = extrapolation.BOUNDARY)
       dims: tuple or None:  (Default value = None)
 
@@ -407,7 +407,7 @@ def upsample2x(grid: Tensor,
       grid: half-size grid
       padding: grid extrapolation
       dims: dims along which up-sampling is applied. If None, up-sample along all spatial dims.
-      grid: Tensor: 
+      grid: Tensor:
       padding: Extrapolation:  (Default value = extrapolation.BOUNDARY)
       dims: tuple or None:  (Default value = None)
 
@@ -437,9 +437,9 @@ def sample_subgrid(grid: Tensor, start: Tensor, size: Shape) -> Tensor:
     The order of dims must be equal to `size` and `grid.shape.spatial`.
       size: resolution of the sub-grid. Must not be larger than the resolution of `grid`.
     The order of dims must be equal to `start` and `grid.shape.spatial`.
-      grid: Tensor: 
-      start: Tensor: 
-      size: Shape: 
+      grid: Tensor:
+      start: Tensor:
+      size: Shape:
 
     Returns:
       sampled sub-grid
@@ -480,16 +480,16 @@ def poisson_bracket(grid1, grid2):
 def _periodic_2d_arakawa_poisson_bracket(tensor1: Tensor, tensor2: Tensor, dx: float):
     """
     Solves the poisson bracket using the Arakawa Scheme [tensor1, tensor2]
-    
+
     Only works in 2D, with equal spaced grids, and periodic boundary conditions
 
     Args:
       tensor1(Tensor): first field in the poisson bracket
       tensor2(Tensor): second field in the poisson bracket
       dx(float): Grid size (equal in x-y)
-      tensor1: Tensor: 
-      tensor2: Tensor: 
-      dx: float: 
+      tensor1: Tensor:
+      tensor2: Tensor:
+      dx: float:
 
     Returns:
 

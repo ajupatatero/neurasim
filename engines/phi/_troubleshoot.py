@@ -47,7 +47,6 @@ def troubleshoot_tensorflow():
     with tf.TF_BACKEND:
         try:
             math.assert_close(math.ones(batch=8, x=64) + math.ones(batch=8, x=64), 2)
-            # TODO cuDNN math.conv(math.ones(batch=8, x=64), math.ones(x=4))
         except BaseException as err:
             return f"Installed but tests failed with error: {err}"
     if gpu_count == 0:
@@ -132,4 +131,3 @@ def troubleshoot_dash():
     except BaseException as e:
         return f"Runtime error: {e}"
     return 'OK'
-

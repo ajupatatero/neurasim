@@ -76,8 +76,6 @@ def velocityUpdateNot(pressure, U, flags):
             (flags.narrow(4, 1, w-2).narrow(3, 0, h-2).eq(CellType.TypeEmpty))
 
     else:
-        # TODO: implement 3D bcs well.
-        # TODO: add outlfow (change in advection required)
         mask_fluid  = flags.narrow(4, 1, w-2).narrow(3, 1, h-2).narrow(2, 1, d-2).eq(CellType.TypeFluid)
         mask_fluid_i = mask_fluid.__and__ \
             (flags.narrow(4, 0, w-2).narrow(3, 1, h-2).narrow(2, 1, d-2).eq(CellType.TypeFluid))
@@ -150,16 +148,6 @@ def velocityUpdateNot(pressure, U, flags):
             mask_obstacle_fluid * \
             (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m) + \
             mask_no_fluid * (0))
-        #print('******************************************************')
-
-        #print('masks')
-        #print('*    *         *            *')
-        #print(mask_fluid)
-        #print('*    *         *            *')
-        #print(mask_fluid_obstacle)
-        #print(mask_obstacle_fluid)
-        #print(mask_no_fluid)
-        #print('******************************************************')
     else:
         U[:,:,1:(d-1),1:(h-1),1:(w-1)] =  mask * \
             (U.narrow(4, 1, w-1).narrow(3, 1, h-1).narrow(2, 1, d-2) - (Pijk - Pijk_m))
@@ -310,8 +298,6 @@ def velocityUpdate(pressure, U, flags):
             (flags.narrow(4, 1, w-2).narrow(3, 0, h-2).ne(CellType.TypeFluid))
 
     else:
-        # TODO: implement 3D bcs well.
-        # TODO: add outlfow (change in advection required)
         mask_fluid  = flags.narrow(4, 1, w-2).narrow(3, 1, h-2).narrow(2, 1, d-2).eq(CellType.TypeFluid)
         mask_fluid_i = mask_fluid.__and__ \
             (flags.narrow(4, 0, w-2).narrow(3, 1, h-2).narrow(2, 1, d-2).eq(CellType.TypeFluid))
@@ -358,7 +344,7 @@ def velocityUpdate(pressure, U, flags):
     mask_no_fluid_j_f = mask_no_fluid_jm1.type(U.type())
 
 
- 
+
     if is3D:
         mask_fluid_k_f = mask_fluid_k.type(U.type())
 
@@ -370,7 +356,7 @@ def velocityUpdate(pressure, U, flags):
         mask_fluid_inflow = torch.cat((mask_fluid_inflow_im1, mask_fluid_inflow_jm1), 1).contiguous()
         mask_fluid_outflow = torch.cat((mask_fluid_outflow_im1, mask_fluid_outflow_jm1), 1).contiguous()
         mask_obstacle_fluid = torch.cat((mask_obstacle_fluid_i_f, mask_obstacle_fluid_j_f), 1).contiguous()
-        mask_obstacle_inflow = torch.cat((mask_obstacle_inflow_i_f, mask_obstacle_inflow_j_f), 1).contiguous()        
+        mask_obstacle_inflow = torch.cat((mask_obstacle_inflow_i_f, mask_obstacle_inflow_j_f), 1).contiguous()
         mask_inflow_fluid = torch.cat((mask_inflow_fluid_im1, mask_inflow_fluid_jm1), 1).contiguous()
         mask_outflow_fluid = torch.cat((mask_outflow_fluid_im1, mask_outflow_fluid_jm1), 1).contiguous()
         mask_inflow_obstacle = torch.cat((mask_inflow_obstacle_im1, mask_inflow_obstacle_jm1), 1).contiguous()
@@ -418,87 +404,6 @@ def velocityUpdate(pressure, U, flags):
         # 3) Cell is obstacle and left neighbour is fluid
         # u = u + p(i-1,j)
 
-
-        """
-        U[:,:,:,1:(h-1),1:(w-1)] = (mask_fluid * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-            mask_fluid_outflow * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - Pijk) + \
-            mask_fluid_obstacle * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - Pijk) + \
-            mask_obstacle_fluid * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m) + \
-            mask_outflow_fluid * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m) + \
-            mask_inflow * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) +            
-            mask_fluid_inflow * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-            mask_inflow_fluid * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-            mask_obstacle_inflow * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-            mask_inflow_obstacle * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-            mask_no_fluid * (0))
-        """
-
-        #import matplotlib.pyplot as plt
-        #fig, axs = plt.subplots(1, 2, figsize=(6,3))
-        #im0 = axs[0].imshow((mask_fluid[0, 0]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow((mask_fluid[0, 1]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im1, ax=axs[1])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/mask_fluid.png')
-        #fig, axs = plt.subplots(1, 2, figsize=(6,3))
-        #im0 = axs[0].imshow((mask_fluid_obstacle[0, 0]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow((mask_fluid_obstacle[0, 1]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im1, ax=axs[1])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/mask_fluid_obstacle.png')
-        #fig, axs = plt.subplots(1, 2, figsize=(6,3))
-        #im0 = axs[0].imshow((mask_obstacle_fluid[0, 0]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow((mask_obstacle_fluid[0, 1]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im1, ax=axs[1])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/mask_obstacle_fluid.png')
-        #fig, axs = plt.subplots(1, 2, figsize=(6,3))
-        #im0 = axs[0].imshow((mask_no_fluid[0, 0]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow((mask_no_fluid[0, 1]).detach().cpu()[0, 180:260, 120:180], cmap=plt.get_cmap('seismic'))
-        #fig.colorbar(im1, ax=axs[1])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/mask_no_fluid.png')
-        #fig, axs = plt.subplots(1, 3, figsize=(9,3))
-        #maxgpx = torch.max((Pijk - Pijk_m)[0, 0])
-        #maxgpy = torch.max((Pijk - Pijk_m)[0, 1])
-        #maxp = torch.max((Pijk)[0, 0])
-        #im0 = axs[0].imshow(((Pijk)[0, 0]).detach().cpu()[0, :, :], vmin = -maxp , vmax = maxp, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180] [0, 438:, 502:]
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow(((Pijk - Pijk_m)[0, 0]).detach().cpu()[0, :, :], vmin = -maxgpx , vmax = maxgpx, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180][0, 438:, 502:]
-        #fig.colorbar(im1, ax=axs[1])
-        #im2 = axs[2].imshow(((Pijk - Pijk_m)[0, 1]).detach().cpu()[0, :, :], vmin = -maxgpy , vmax = maxgpy, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180] [0, 438:, 502:]
-        #fig.colorbar(im2, ax=axs[2])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/grad_p.png')
-        #fig, axs = plt.subplots(1, 2, figsize=(6,3))
-        #im0 = axs[0].imshow((U[0, 0]).detach().cpu()[0, :, :], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow((U[0, 1]).detach().cpu()[0, :, :], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im1, ax=axs[1])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/U_prev.png')
-        #fig, axs = plt.subplots(1, 1, figsize=(6,3))
-        #maxdiv = torch.max((velocityDivergence(U, flags)[0, 0]).detach().cpu()[0, :, :])
-        #im0 = axs.imshow((velocityDivergence(U, flags)[0, 0]).detach().cpu()[0, :, :], vmin = -0.1*maxdiv , vmax = 0.1*maxdiv, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im0, ax=axs)
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/div_in.png')
-        #plt.close()
-
         mask_fluid = mask_fluid*0 +1
 
         U[:,:,:,1:(h-1),1:(w-1)] = (mask_fluid * \
@@ -508,7 +413,7 @@ def velocityUpdate(pressure, U, flags):
             mask_obstacle_fluid * \
             (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m) + \
             mask_inflow * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) +            
+            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) +
             mask_fluid_inflow * \
             (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
             mask_inflow_fluid * \
@@ -518,64 +423,7 @@ def velocityUpdate(pressure, U, flags):
             mask_inflow_obstacle * \
             (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
             mask_no_fluid * (0))
-        
-        #fig, axs = plt.subplots(2, 4, figsize=(20,6))
-        #im00 = axs[0, 0].imshow(((U)[0, 0]).detach().cpu()[0, 118:, 118:], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im00, ax=axs[0, 0])
-        #im10 = axs[1, 0].imshow(((U)[0, 1]).detach().cpu()[0, 118:, 118:], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im10, ax=axs[1, 0])
-        #im01 = axs[0, 1].imshow(((U)[0, 0]).detach().cpu()[0, :10, 118:], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im01, ax=axs[0, 1])
-        #im11 = axs[1, 1].imshow(((U)[0, 1]).detach().cpu()[0, :10, 118:], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im11, ax=axs[1, 1])
-        #im02 = axs[0, 2].imshow(((U)[0, 0]).detach().cpu()[0, 118:, :10], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im02, ax=axs[0, 2])
-        #im12 = axs[1, 2].imshow(((U)[0, 1]).detach().cpu()[0, 118:, :10], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im12, ax=axs[1, 2]) 
-        #im03 = axs[0, 3].imshow(((U)[0, 0]).detach().cpu()[0, :10, :10], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im03, ax=axs[0, 3])
-        #im13 = axs[1, 3].imshow(((U)[0, 1]).detach().cpu()[0, :10, :10], cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im13, ax=axs[1, 3])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/U_after.png')
-        #fig, axs = plt.subplots(1, 4, figsize=(10,3))
-        #im0 = axs[0].imshow((velocityDivergence(U, flags)[0, 0]).detach().cpu()[0, 118:, 118:], vmin = -0.01*maxdiv, vmax = 0.01*maxdiv, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im0, ax=axs[0])
-        #im1 = axs[1].imshow((velocityDivergence(U, flags)[0, 0]).detach().cpu()[0, :10, 118:], vmin = -0.01*maxdiv, vmax = 0.01*maxdiv, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im1, ax=axs[1])
-        #im2 = axs[2].imshow((velocityDivergence(U, flags)[0, 0]).detach().cpu()[0, 118:, :10], vmin = -0.01*maxdiv, vmax = 0.01*maxdiv, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im2, ax=axs[2])
-        #im3 = axs[3].imshow((velocityDivergence(U, flags)[0, 0]).detach().cpu()[0, :10, :10], vmin = -0.01*maxdiv, vmax = 0.01*maxdiv, cmap=plt.get_cmap('seismic')) #[0, 180:260, 120:180]
-        #fig.colorbar(im3, ax=axs[3])
-        #fig.tight_layout()
-        #fig.savefig('/tmpdir/ajuriail/neuralsim/cases/14_train_debug/results_lt_nograd/div_out.png')
-        #plt.close()
 
-        #import pdb
-        #pdb.set_trace()
-
-        #print("flags After Adding 7", flags[0,0,0,0:5,30:64])
-        #U[:,:,:,1:(h-1),1:(w-1)] = (mask_fluid * \
-        #    (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-        #     mask_fluid_obstacle * \
-        #    (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - Pijk) + \
-        #    mask_obstacle_fluid * \
-        #    (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m) + \
-        #    mask_inflow * \
-        #    (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-        #    mask_fluid_inflow * \
-        #    (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)) + \
-        #    mask_no_fluid * (0))
-        #print('******************************************************')
-
-        #print('masks')
-        #print('*    *         *            *')
-        #print(mask_fluid)
-        #print('*    *         *            *')
-        #print(mask_fluid_obstacle)
-        #print(mask_obstacle_fluid)
-        #print(mask_no_fluid)
-        #print('******************************************************')
     else:
         U[:,:,1:(d-1),1:(h-1),1:(w-1)] =  mask * \
             (U.narrow(4, 1, w-1).narrow(3, 1, h-1).narrow(2, 1, d-2) - (Pijk - Pijk_m))
@@ -664,8 +512,6 @@ def velocityUpdate_Density(pressure, U, flags, density):
             (flags.narrow(4, 1, w-2).narrow(3, 0, h-2).eq(CellType.TypeEmpty))
 
     else:
-        # TODO: implement 3D bcs well.
-        # TODO: add outlfow (change in advection required)
         mask_fluid  = flags.narrow(4, 1, w-2).narrow(3, 1, h-2).narrow(2, 1, d-2).eq(CellType.TypeFluid)
         mask_fluid_i = mask_fluid.__and__ \
             (flags.narrow(4, 0, w-2).narrow(3, 1, h-2).narrow(2, 1, d-2).eq(CellType.TypeFluid))
@@ -688,7 +534,7 @@ def velocityUpdate_Density(pressure, U, flags, density):
     mask_no_fluid_j_f = mask_no_fluid_jm1.type(U.type())
 
 
- 
+
     if is3D:
         mask_fluid_k_f = mask_fluid_k.type(U.type())
 
@@ -754,7 +600,7 @@ def velocityUpdate_Density(pressure, U, flags, density):
         # 3) Cell is obstacle and left neighbour is fluid
         # u = u + p(i-1,j)
 
-                
+
         U[:,:,:,1:(h-1),1:(w-1)] = (mask_fluid * \
             (U.narrow(4, 1, w-2).narrow(3, 1, h-2) - (Pijk - Pijk_m)/(1-Rhoijk)) + \
             mask_fluid_obstacle * \
@@ -762,10 +608,8 @@ def velocityUpdate_Density(pressure, U, flags, density):
             #mask_fluid_obstacle * \
             #(U.narrow(4, 1, w-2).narrow(3, 1, h-2) - Pijk) + \
             mask_obstacle_fluid * \
-            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m)) 
+            (U.narrow(4, 1, w-2).narrow(3, 1, h-2) + Pijk_m))
 
     else:
         U[:,:,1:(d-1),1:(h-1),1:(w-1)] =  mask * \
             (U.narrow(4, 1, w-1).narrow(3, 1, h-1).narrow(2, 1, d-2) - (Pijk - Pijk_m))
-
-

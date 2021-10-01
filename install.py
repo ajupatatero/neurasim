@@ -1,8 +1,6 @@
 import os, sys
 
 
-#TODO: import from requirements
-
 dependencies =['pyyaml', 'argparse', 'colorama', 'scipy', 'numpy', 'torch', 'matplotlib', 'sphinx', 'myst-parser', 'ptflops']
 
 FPATH="./"

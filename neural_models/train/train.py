@@ -237,7 +237,7 @@ def launch_train(conf):
                 state['bestPerf'] = val_loss
             save_checkpoint(state, is_best, m_path, 'convModel_lastEpoch.pth')
 
-            # Save loss to disk -- TODO: Check if there is a more efficient way, instead
+            # Save loss to disk
             # of loading the whole file...
             if epoch % conf['freqToFile'] == 0:
                 plot_train_file = file_train + '.npy'

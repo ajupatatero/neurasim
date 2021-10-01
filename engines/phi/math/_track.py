@@ -40,7 +40,7 @@ class ShiftLinOp(Tensor):
     def native(self, order: str or tuple or list = None):
         """
         Evaluates the value of the linear operation applied to the original source tensor.
-        
+
         This is done by building a sparse matrix for all dimensions that are affected by the linear operation.
         These dimensions are detected automatically during the creation of the linear operation.
         All other dimensions (independent dimensions) are combined into a single batch dimensions for the sparse matrix multiplication.
@@ -60,7 +60,6 @@ class ShiftLinOp(Tensor):
         assert value.shape == self.source.shape
         mat = self.build_sparse_coordinate_matrix()
         independent_dims = self.independent_dims
-        # TODO slice for missing dimensions
         order_src = value.shape.only(independent_dims).extend(value.shape.without(independent_dims))
         order_out = self._shape.only(independent_dims).extend(self._shape.without(independent_dims))
         native_src = value.native(order=order_src.names)
@@ -74,7 +73,7 @@ class ShiftLinOp(Tensor):
         """
         Builds a sparse matrix that represents this linear operation.
         Independent dimensions, those that can be treated as batch dimensions, are recognized automatically and ignored.
-        
+
         :return: native sparse tensor
 
         Args:
@@ -99,7 +98,6 @@ class ShiftLinOp(Tensor):
         backend = choose_backend(*vals)
         vals = backend.flatten(backend.stack(vals, -1))
         rows = np.arange(out_shape.volume * len(self.val)) // len(self.val)
-        # TODO sort indices
         return choose_backend(rows, cols, vals).sparse_tensor((rows, cols), vals, (out_shape.volume, src_shape.volume))
 
     def build_sparse_csr_matrix(self):
@@ -311,7 +309,7 @@ def lin_placeholder(value: Tensor, format='shift', broadcast_dims=()) -> Tensor:
       format: shift' or 'sparse' (Default value = 'shift')
       broadcast_dims: list of dimension names that are ignored.
     All values along these dimensions are expected to share the same linear operation. (Default value = ())
-      value: Tensor: 
+      value: Tensor:
 
     Returns:
       placeholder tensor matching the values of `value`

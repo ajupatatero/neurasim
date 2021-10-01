@@ -16,17 +16,11 @@ class Timer:
         self.record(point_name='INIT')
 
     def record(self, point_name='unnamed point'):
-        
-        #TODO: something to calculate accumulative for plots, difuse, etc. given the name, or an aditional parameter as a identifier
-        #same with diference between diferent points not consecutive
-
-
-        #OR BETTER -> do recor (id = 11) -> i llavors que afegis el append en el mateix row que el id donat !!! aixi fer tot els totals, mean, etc
 
         self._time_points.append(torch.cuda.Event(enable_timing=True))
         self._time_points[-1].record()
         self._name_points.append(point_name)
-    
+
     def add_single_interval(self, interval_time, interval_name='unnamed interval'):
         self._single_interval = True
         self._time_interval.append(interval_time)
@@ -38,7 +32,7 @@ class Timer:
     def close(self, save=False):
 
         self.record(point_name='END')
-        torch.cuda.synchronize()  # Wait for the events to be recorded! 
+        torch.cuda.synchronize()  # Wait for the events to be recorded!
 
         time = [0]
         time_dif = [0]
@@ -61,7 +55,7 @@ class Timer:
                 time_dif.append(inter)
                 time.append(0)
                 percentage.append(0)
-        
+
 
         if save:
             with open(f'{self._outdir}performance_results.csv', 'w', newline='') as file:
@@ -72,4 +66,3 @@ class Timer:
                     writer.writerow([ i, self._name_points[i], time[i], time_dif[i], percentage[i]])
 
         return self._name_points, time, time_dif, percentage
-        

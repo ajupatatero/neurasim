@@ -15,9 +15,6 @@ def find_ref(file, ref):
         count += 1
     return ref_line, ref_content
 
-
-
-#TODO: see if there is a better way
 path = Path("./")
 path = path.parent.parent.absolute()
 path = path.parent.absolute()
@@ -34,7 +31,7 @@ for r, d, f in os.walk(repo_path):
     for file in f:
         if file.endswith(".py"):
             ref_line_aux, ref_content_aux = find_ref( os.path.join(r, file) , 'TODO')
-    
+
             if ref_line_aux and ref_content_aux:
                 ref_line.append(ref_line_aux)
                 ref_content.append(ref_content_aux)
@@ -45,6 +42,4 @@ for r, d, f in os.walk(repo_path):
 for i, file in enumerate(ref_file):
     print(f'\nFILE: {file.split("neurasim")[1]}')
     for j, line in enumerate(ref_line[i]):
-        print(f' |-line {line} >> {ref_content[i][j]}', end='')  # without new line, because the content already have a end of line .split("#TODO")[1]
-
-
+        print(f' |-line {line} >> {ref_content[i][j]}', end='')

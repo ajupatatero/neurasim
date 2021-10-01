@@ -1,15 +1,11 @@
 import numpy as np
 from scipy.signal.ltisys import dimpulse
 from torch.functional import Tensor
-from torch.nn.functional import batch_norm  #TODO: correct to avoid import loop
-#from engines.phi.torch.flow import *
-
-from neurasim import * #TODO: correct to avoid import loop
+from torch.nn.functional import batch_norm
+from neurasim import *
 
 
 from engines.phi import *
-#from engines.phi import math
-#from engines.phi.field import divergence
 from engines.phi.field._grid import Grid, CenteredGrid, StaggeredGrid, unstack_staggered_tensor
 from engines.phi.physics import *
 from engines.phi.geom import *
@@ -22,13 +18,13 @@ def to_torch(field):
 
     if isinstance(field,StaggeredGrid):
         Z0 = field.staggered_tensor().tensors[0]._native.detach().squeeze().cpu()
-        Z1 = field.staggered_tensor().tensors[1]._native.detach().squeeze().cpu()       
+        Z1 = field.staggered_tensor().tensors[1]._native.detach().squeeze().cpu()
         Z = [Z0, Z1]
-    elif isinstance(field,CenteredGrid):  
+    elif isinstance(field,CenteredGrid):
         Z=field.values._native.detach().squeeze().cpu()
     else:
         #print('Field already different than StaggeredGrid or CenteredGrid.')
-        Z = field 
+        Z = field
 
     return Z
 
@@ -38,11 +34,10 @@ def to_numpy2(field):
         Z = Z.numpy()
     else:
         #print('Field already different than StaggeredGrid or CenteredGrid.')
-        Z = field 
-    
+        Z = field
+
     return Z
 
-#TODO: check all places where implemented and make sure the new is ok, then eliminate this one.
 def to_numpy(field):
     if isinstance(field,StaggeredGrid):
         if list(field.shape.batch)[0] >= 1 if list(field.shape.batch) else False:
@@ -58,8 +53,8 @@ def to_numpy(field):
         else:
             Z=field.values._native.cpu().numpy()
     else:
-        Z=field 
-    
+        Z=field
+
 
 
     return Z
@@ -98,15 +93,12 @@ def to_staggered(field, Lx, Ly):
 
 
         # Auxiliary tensor to get correct atributes
-        domain = Domain(x=nnx, y=nny, boundaries=CLOSED, bounds=Box[0:Lx, 0:Ly]) 
-        #velocity_init =  domain.staggered_grid(1)
+        domain = Domain(x=nnx, y=nny, boundaries=CLOSED, bounds=Box[0:Lx, 0:Ly])
 
         # Velocity tensor created
         tensor_U = math.wrap(vel, 'batch,vector,x,y') #cuda() if putted as default better it already works. And then no problems
 
         # Useful elements for tensor generation
-        #lower = math.wrap(velocity_init.box.lower)
-        #upper = math.wrap(velocity_init.box.upper)
         extrapolation = math.extrapolation.ZERO
 
         tensor_U_unstack = unstack_staggered_tensor(tensor_U)
@@ -130,9 +122,9 @@ def get_dimensions(field):
             Nbatch = 0
             Nx = field.shape[0]
             Ny = field.shape[1]
-        
-        Lx = field.box.upper[0] - 0 #field.box.lower[0]
-        Ly = field.box.upper[1] - 0 #field.box.lower[1]
+
+        Lx = field.box.upper[0] - 0
+        Ly = field.box.upper[1] - 0
         dx = field.dx[0]
         dy = field.dx[1]
 
@@ -148,29 +140,29 @@ def get_grid(field, Lx=None, Ly=None, dx=None, dy=None):
         assert Lx != None and Ly != None and dx != None and dy != None , 'If field is array or numpy, then it requires to pass the {Lx,Ly,dx,dy} values.'
 
     #2.1.Staggered grid == Cells walls
-    cx = np.arange(0, Lx +dx/2, dx) 
+    cx = np.arange(0, Lx +dx/2, dx)
     cy = np.arange(0, Ly +dy/2, dy)
     #NOTICE: we include +dx in order to consider the last step in arrange
 
     #2.2.Value grid -> Centered or Staggered in function of value type
     if isinstance(field,StaggeredGrid):
-        x = cx  
-        y = cy 
+        x = cx
+        y = cy
     elif isinstance(field,CenteredGrid):
-        x = np.arange(dx/2, Lx-dx/2 +dx/2, dx) 
+        x = np.arange(dx/2, Lx-dx/2 +dx/2, dx)
         y = np.arange(dy/2, Ly-dy/2 +dy/2, dy)
     elif isinstance(field,(list, tuple, np.ndarray)) and len(field)==Lx/dx + 1:
         x = cx
         y = cy
     elif isinstance(field,(list, tuple, np.ndarray)):
-        x = np.arange(dx/2, Lx-dx/2 +dx/2, dx) 
+        x = np.arange(dx/2, Lx-dx/2 +dx/2, dx)
         y = np.arange(dy/2, Ly-dy/2 +dy/2, dy)
-    
+
     Y, X = np.meshgrid(y,x)
     #NOTICE: Correct row-major, colum-major notation of numpy to adapt it to the phiflow notation
     #i.e. in numpy array(y,x), in phiflow and derivated array(x,y). Where x,y physical direction
     #i.e. x horizontal positive to the right, y vertical positive to the up.
-    
+
     return x,y,X,Y,cx,cy
 
 
@@ -183,7 +175,6 @@ def get_exterior_edges(object_mask):
 
     #2.Extract the edges nodes
     #VERTICAL EDGES or WALLS (HORIZONTAL DIFFERENCE)
-    #edgesh_numpy = np.where(object_mask[1:,:] != object_mask[:-1,:])
     edgesh = torch.where(object_mask[1:,:] != object_mask[:-1,:])
 
     #Vertical-Left walls
@@ -195,7 +186,6 @@ def get_exterior_edges(object_mask):
     edge_hr_y = edgesh[1][int(len(edgesh[1])/2):]
 
     #HORIZONTAL EDGES or WALLS (VERTICAL DIFFERENCE)
-    #edgesv_numpy = np.where(object_mask[:,1:] != object_mask[:,:-1])
     edgesv = torch.where(object_mask[:,1:] != object_mask[:,:-1])
 
     #Horizontal-Bottom walls
@@ -224,7 +214,7 @@ def exterior_edge_to_interior_edge(edge_hl_x=[], edge_hl_y=[], edge_hr_x=[], edg
 
 def get_interior_edges(object_mask):
     [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = get_exterior_edges(object_mask)
-    [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = exterior_edge_to_interior_edge(edge_hl_x=edge_hl_x, 
+    [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = exterior_edge_to_interior_edge(edge_hl_x=edge_hl_x,
         edge_hl_y=edge_hl_y, edge_hr_x=edge_hr_x, edge_hr_y=edge_hr_y, edge_vb_x=edge_vb_x, edge_vb_y=edge_vb_y, edge_vt_x=edge_vt_x, edge_vt_y=edge_vt_y)
 
     return [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ]
@@ -239,7 +229,6 @@ def get_line_distribution(object_mask=None, edges=None):
     else:
         raise Error
 
-    #TODO:remove when passed to torch
     edge_hl_x = edge_hl_x.cpu().numpy()
     edge_hl_y = edge_hl_y.cpu().numpy()
     edge_hr_x = edge_hr_x.cpu().numpy()
@@ -259,93 +248,46 @@ def get_line_distribution(object_mask=None, edges=None):
         edge_hl_x_sorted = [*edge_hl_x[np.where(edge_hl_x == idx)][:int(np.array(np.where(edge_hl_x == idx)).size/2)],
                             *edge_hl_x_sorted,
                             *edge_hl_x[np.where(edge_hl_x == idx)][int(np.array(np.where(edge_hl_x == idx)).size/2):] ]
-        
+
         edge_hl_y_sorted = [*edge_hl_y[np.where(edge_hl_x == idx)][:int(np.array(np.where(edge_hl_x == idx)).size/2)],
                             *edge_hl_y_sorted,
-                            *edge_hl_y[np.where(edge_hl_x == idx)][int(np.array(np.where(edge_hl_x == idx)).size/2):] ]               
-    
+                            *edge_hl_y[np.where(edge_hl_x == idx)][int(np.array(np.where(edge_hl_x == idx)).size/2):] ]
 
-    # edge_hl_x_sorted = torch.tensor([])
-    # edge_hl_y_sorted = torch.tensor([])
-
-    # for i, idx in enumerate(torch.unique(edge_hl_x)):
-
-    #     # edge_hl_x_sorted = [*edge_hl_x[torch.where(edge_hl_x == idx)][:int(len(torch.where(edge_hl_x == idx)[0])/2)],
-    #     #                     *edge_hl_x_sorted,
-    #     #                     *edge_hl_x[torch.where(edge_hl_x == idx)][int(len(torch.where(edge_hl_x == idx)[0])/2):] ]
-        
-    #     # edge_hl_y_sorted = [*edge_hl_y[torch.where(edge_hl_x == idx)][:int(len(torch.where(edge_hl_x == idx)[0])/2)],
-    #     #                     *edge_hl_y_sorted,
-    #     #                     *edge_hl_y[torch.where(edge_hl_x == idx)][int(len(torch.where(edge_hl_x == idx)[0])/2):] ]               
-        
-    #     edge_hl_x_sorted = torch.tensor([*edge_hl_x[torch.where(edge_hl_x == idx)][:int(len(torch.where(edge_hl_x == idx)[0])/2)],
-    #                         *edge_hl_x_sorted,
-    #                         *edge_hl_x[torch.where(edge_hl_x == idx)][int(len(torch.where(edge_hl_x == idx)[0])/2):] ] )
-        
-    #     edge_hl_y_sorted = torch.tensor([*edge_hl_y[torch.where(edge_hl_x == idx)][:int(len(torch.where(edge_hl_x == idx)[0])/2)],
-    #                         *edge_hl_y_sorted,
-    #                         *edge_hl_y[torch.where(edge_hl_x == idx)][int(len(torch.where(edge_hl_x == idx)[0])/2):] ] )
-                        
-        
     #Sort Top (already in order)
     edge_vt_x_sorted = edge_vt_x
     edge_vt_y_sorted = edge_vt_y
 
-    #Sort Right  #TODO: un poco magico, hacer posicionamiento ok desde el for 
+    #Sort Right
     edge_hr_x_sorted = []
     edge_hr_y_sorted = []
     for i, idx in enumerate(np.unique(edge_hr_x)[::-1]):
         edge_hr_x_sorted = [*edge_hr_x[np.where(edge_hr_x == idx)][:int(np.array(np.where(edge_hr_x == idx)).size/2)],
                             *edge_hr_x_sorted,
                             *edge_hr_x[np.where(edge_hr_x == idx)][int(np.array(np.where(edge_hr_x == idx)).size/2):] ]
-        
+
         edge_hr_y_sorted = [*edge_hr_y[np.where(edge_hr_x == idx)][:int(np.array(np.where(edge_hr_x == idx)).size/2)],
                             *edge_hr_y_sorted,
-                            *edge_hr_y[np.where(edge_hr_x == idx)][int(np.array(np.where(edge_hr_x == idx)).size/2):] ]               
-    
+                            *edge_hr_y[np.where(edge_hr_x == idx)][int(np.array(np.where(edge_hr_x == idx)).size/2):] ]
+
     edge_hr_y_sorted = edge_hr_y_sorted[::-1]
-
-    # edge_hr_x_sorted = torch.tensor([])
-    # edge_hr_y_sorted = torch.tensor([])
-
-    # for i, idx in enumerate(torch.flip(torch.unique(edge_hr_x), [0])): #we have to do this because pytorch does not support negative step i.e. [::-1]
-    #     edge_hr_x_sorted = torch.tensor([*edge_hr_x[torch.where(edge_hr_x == idx)][:int(len(torch.where(edge_hr_x == idx)[0])/2)],
-    #                         *edge_hr_x_sorted,
-    #                         *edge_hr_x[torch.where(edge_hr_x == idx)][int(len(torch.where(edge_hr_x == idx)[0])/2):] ] )
-        
-    #     edge_hr_y_sorted = torch.tensor([*edge_hr_y[torch.where(edge_hr_x == idx)][:int(len(torch.where(edge_hr_x == idx)[0])/2)],
-    #                         *edge_hr_y_sorted,
-    #                         *edge_hr_y[torch.where(edge_hr_x == idx)][int(len(torch.where(edge_hr_x == idx)[0])/2):] ] )            
-    
-    # edge_hr_y_sorted = torch.flip(edge_hr_y_sorted, [0])
 
     #Sort Bottom
     edge_vb_x_sorted = edge_vb_x[::-1]
-    #edge_vb_x_sorted = torch.flip(edge_vb_x, [0])
     edge_vb_y_sorted = edge_vb_y
 
     #3.Combine all sorted and Set Origin
     edge_x_sorted_full = [*edge_hl_x_sorted[int(len(edge_hl_x_sorted)/2):], *edge_vt_x_sorted, *edge_hr_x_sorted, *edge_vb_x_sorted, *edge_hl_x_sorted[:int(len(edge_hl_x_sorted)/2)]]
     edge_y_sorted_full = [*edge_hl_y_sorted[int(len(edge_hl_y_sorted)/2):], *edge_vt_y_sorted, *edge_hr_y_sorted, *edge_vb_y_sorted, *edge_hl_y_sorted[:int(len(edge_hl_y_sorted)/2)]]
-    #edge_x_sorted_full = torch.tensor([*edge_hl_x_sorted[int(len(edge_hl_x_sorted)/2):], *edge_vt_x_sorted, *edge_hr_x_sorted, *edge_vb_x_sorted, *edge_hl_x_sorted[:int(len(edge_hl_x_sorted)/2)]] )
-    #edge_y_sorted_full = torch.tensor([*edge_hl_y_sorted[int(len(edge_hl_y_sorted)/2):], *edge_vt_y_sorted, *edge_hr_y_sorted, *edge_vb_y_sorted, *edge_hl_y_sorted[:int(len(edge_hl_y_sorted)/2)]] )
 
     #4.Eliminate copied items
     edge_x_sorted = []
     edge_y_sorted = []
-    #edge_x_sorted = torch.tensor([])
-    #edge_y_sorted = torch.tensor([])
+
     for x, idx in enumerate(edge_x_sorted_full):
-        jdx = edge_y_sorted_full[x] 
+        jdx = edge_y_sorted_full[x]
 
         present = False
         for i in range(len(edge_x_sorted)): #if 1 element, len error
-        #for i in range(edge_x_sorted.numel()):
-            # if edge_x_sorted.numel() == 1 :
-            #     if edge_x_sorted.item() == idx and edge_y_sorted.item() == jdx:
-            #         present = True
-            #         break
-            # else:
             if edge_x_sorted[i] == idx and edge_y_sorted[i] == jdx:
                 present = True
                 break
@@ -354,26 +296,18 @@ def get_line_distribution(object_mask=None, edges=None):
             edge_x_sorted.append(idx)
             edge_y_sorted.append(jdx)
 
-            # if edge_x_sorted.numel() == 0:
-            #     edge_x_sorted = idx
-            #     edge_y_sorted = jdx
-            # else:
-            #     edge_x_sorted = torch.cat([edge_x_sorted, idx])
-            #     edge_y_sorted = torch.cat([edge_y_sorted, jdx])
-             
-
-    #5.Calculate corresponding angle 
+    #5.Calculate corresponding angle
     angle = np.zeros_like(edge_x_sorted)
     for x, idx in enumerate(edge_x_sorted):
-        jdx = edge_y_sorted[x] 
+        jdx = edge_y_sorted[x]
 
         c_x = min(edge_x_sorted) + (max(edge_x_sorted)-min(edge_x_sorted))/2
         c_y = min(edge_y_sorted) + (max(edge_y_sorted)-min(edge_y_sorted))/2
 
         angle[x] = np.arctan2(jdx-c_y,c_x-idx)*(180/np.pi)
         if angle[x]<0:
-            angle[x] = angle[x] + 360 
-    angle_sorted = sorted(angle)   
+            angle[x] = angle[x] + 360
+    angle_sorted = sorted(angle)
 
     #6.Final sorting to correct order
     line_x_sorted = []
@@ -384,23 +318,20 @@ def get_line_distribution(object_mask=None, edges=None):
                 line_x_sorted.append(edge_x_sorted[j])
                 line_y_sorted.append(edge_y_sorted[j])
                 break
-            
+
     return line_x_sorted, line_y_sorted, angle_sorted
 
 def rotate_mask():
     pass
-    #to rotate the objects like phiflow, for instance the blades in non relative. It consists of rotating the distances, and then creating a 
-    #centered field of type mask but without any easy form like box or sphere. Combination of boxes???
 
 
 #OBJECT CREATION FUNCTIONS
-#TODO: see if possible to define as CLasses like Spehere, etc that depend on class Geometry
 def get_blades_mask(domain, center, radius, num_blades):
     obstacle_bar = Box[45:55, 20:80]
     obstacle_bar_2 = Box[20:80, 45:55]
     obstacle = Obstacle(union([obstacle_bar, obstacle_bar_2]) ,angular_velocity=0)
 
-    obstacle_mask = domain.scalar_grid(obstacle.geometry)  
+    obstacle_mask = domain.scalar_grid(obstacle.geometry)
 
     return obstacle_mask
 
@@ -408,7 +339,7 @@ def get_blades_mask(domain, center, radius, num_blades):
 #BOUNDARIES CONDITIONS FUNCTIONS
 def set_normal_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0]):
     '''Function to impose the velocity boundary conditions in the normal direction of a given object.
-    
+
     USAGE:
         -object_mask:  type scalar_grid//centerredgrid
         -velocity
@@ -416,7 +347,7 @@ def set_normal_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0]):
         -domain: simulation domain
 
     '''
-    
+
     #1.Get the edges of the object
     [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = get_interior_edges(object_mask)
 
@@ -444,7 +375,7 @@ def set_normal_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0]):
 
 def set_tangential_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0], inv_geom = False):
     '''Function to impose the velocity boundary conditions in the tangential direction of a given object.
-    
+
     USAGE:
         -object_mask:  type scalar_grid//centerredgrid
         -velocity
@@ -452,7 +383,7 @@ def set_tangential_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0], inv
         -domain: simulation domain
 
     '''
-    
+
     #1.Get the edges of the object
     [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = get_interior_edges(object_mask)
 
@@ -482,7 +413,7 @@ def set_tangential_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0], inv
 
         u[edge_vb_x, edge_vb_y] = velocity_BC[2]
         u[edge_vt_x, edge_vt_y] = velocity_BC[3]
-    
+
     #4.Pass back to PhiFlow Staggered
     _,Lx,Ly,_,_,_,_ = get_dimensions(object_mask)
     velocity = to_staggered([u,v], Lx, Ly)
@@ -491,7 +422,7 @@ def set_tangential_bc(object_mask, velocity = None, velocity_BC = [0,0,0,0], inv
 
 def set_tangential_w_bc(object_mask, velocity = None, w_BC = 0):
     '''Function to impose the velocity boundary conditions in the tangential direction of a given object.
-    
+
     USAGE:
         -object_mask:  type scalar_grid//centerredgrid
         -velocity
@@ -499,7 +430,7 @@ def set_tangential_w_bc(object_mask, velocity = None, w_BC = 0):
         -domain: simulation domain
 
     '''
-    
+
     exit()
     pass
 
@@ -519,9 +450,6 @@ def set_tangential_w_bc(object_mask, velocity = None, w_BC = 0):
         v = v[0]
 
     #3.Set the normal velocities
-    #TODO: coger los x,y y calcular los radios exactos, pero passar x,y o calcular cada vez ...?? poner en main el x,y y asi solo pasar
-    #hacer que si es none lo cree y si pasado lo coja
-
     v[edge_hl_x - 1, edge_hl_y] = w_BC*r
     v[edge_hr_x + 1, edge_hr_y] = -w_BC*r
 
@@ -536,7 +464,7 @@ def set_tangential_w_bc(object_mask, velocity = None, w_BC = 0):
 
 def set_interior_bc(object_mask, velocity = None, velocity_BC = [0,0], inv_geom = False):
     '''Function to impose the velocity boundary conditions inside of a given object.
-    
+
     USAGE:
         -object_mask:  type scalar_grid//centerredgrid
         -velocity
@@ -544,10 +472,10 @@ def set_interior_bc(object_mask, velocity = None, velocity_BC = [0,0], inv_geom 
         -domain: simulation domain
 
     '''
-    
+
     #1.Get the edges of the object
     [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = get_interior_edges(object_mask)
-   
+
     #2.Pass to numpy the velocity field (in case none is passed, suppose it is not defined yet.)
     if velocity is None:
         u = np.zeros_like(object_mask+1)
@@ -587,7 +515,7 @@ def set_interior_bc(object_mask, velocity = None, velocity_BC = [0,0], inv_geom 
         down_y = line_y_sorted[int(len(line_y_sorted)/2):]
 
         for i in range(len(up_x)):
-            u_aux[up_x[i], down_y[i]:up_y[i]+1] = u[up_x[i], down_y[i]:up_y[i]+1] 
+            u_aux[up_x[i], down_y[i]:up_y[i]+1] = u[up_x[i], down_y[i]:up_y[i]+1]
             v_aux[up_x[i], down_y[i]:up_y[i]+1] = v[up_x[i], down_y[i]:up_y[i]+1]
 
         u = u_aux
@@ -598,7 +526,6 @@ def set_interior_bc(object_mask, velocity = None, velocity_BC = [0,0], inv_geom 
     velocity = to_staggered([u,v], Lx, Ly)
 
     return velocity
-
 
 def set_wall_bc(object_mask, velocity = None):
     return set_normal_bc(object_mask, velocity = velocity)
@@ -634,15 +561,15 @@ def set_normal_bc2(bc_mask_x, bc_mask_y, bc_value_x, bc_value_y, object_mask, ve
     bc_mask_x[edge_hr_x +1, edge_hr_y] = 0
 
     bc_mask_y[edge_vb_x, edge_vb_y] = 0
-    bc_mask_y[edge_vt_x, edge_vt_y + 1] = 0 
-    
+    bc_mask_y[edge_vt_x, edge_vt_y + 1] = 0
+
     return bc_mask_x, bc_mask_y, bc_value_x, bc_value_y
 
 def set_tangential_bc2(bc_mask_x, bc_mask_y, bc_value_x, bc_value_y, object_mask, velocity_BC = [0,0,0,0], inv_geom = False):
     '''Function to impose the velocity boundary conditions in the tangential direction of a given object.
-    
+
     '''
-    
+
     #1.Get the edges of the object
     [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = get_interior_edges(object_mask)
 
@@ -672,17 +599,17 @@ def set_tangential_bc2(bc_mask_x, bc_mask_y, bc_value_x, bc_value_y, object_mask
 
         bc_mask_x[edge_vb_x, edge_vb_y] = 0
         bc_mask_x[edge_vt_x, edge_vt_y] = 0
-    
+
 
     return bc_mask_x, bc_mask_y, bc_value_x, bc_value_y,
 
 def set_interior_bc2(bc_mask_x, bc_mask_y, bc_value_x, bc_value_y, object_mask, velocity_BC = [0,0], inv_geom = False):
     '''Function to impose the velocity boundary conditions inside of a given object.
     '''
-    
+
     #1.Get the edges of the object
     [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ] = get_interior_edges(object_mask)
-    
+
     #2.Set the normal velocities
     if not inv_geom:
         line_x_sorted, line_y_sorted, _ = get_line_distribution(edges=[ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ])
@@ -715,23 +642,23 @@ def set_interior_bc2(bc_mask_x, bc_mask_y, bc_value_x, bc_value_y, object_mask, 
         down_y = line_y_sorted[int(len(line_y_sorted)/2):]
 
         for i in range(len(up_x)):
-            bc_value_x_aux[up_x[i], down_y[i]:up_y[i]+1] = bc_value_x[up_x[i], down_y[i]:up_y[i]+1] 
-            bc_value_y_aux[up_x[i], down_y[i]:up_y[i]+1] = bc_value_y[up_x[i], down_y[i]:up_y[i]+1] 
+            bc_value_x_aux[up_x[i], down_y[i]:up_y[i]+1] = bc_value_x[up_x[i], down_y[i]:up_y[i]+1]
+            bc_value_y_aux[up_x[i], down_y[i]:up_y[i]+1] = bc_value_y[up_x[i], down_y[i]:up_y[i]+1]
 
             bc_mask_x_aux[up_x[i], down_y[i]:up_y[i]+1] = bc_mask_x[up_x[i], down_y[i]:up_y[i]+1]
             bc_mask_y_aux[up_x[i], down_y[i]:up_y[i]+1] = bc_mask_y[up_x[i], down_y[i]:up_y[i]+1]
 
         bc_value_x = bc_value_x_aux
         bc_value_y = bc_value_y_aux
-        
+
         bc_mask_x = bc_mask_x_aux
         bc_mask_y = bc_mask_y_aux
-            
+
     return bc_mask_x, bc_mask_y, bc_value_x, bc_value_y
 
 
 def get_obstacles_bc(obstacles):
-    '''obstacles: [ [obstacle_mask, 'wr', 'inv_geom'], [obstacle_mask, 'wr', 'inv_geom'], ...] 
+    '''obstacles: [ [obstacle_mask, 'wr', 'inv_geom'], [obstacle_mask, 'wr', 'inv_geom'], ...]
     '''
     Z = to_numpy(obstacles[0][0])
 
@@ -740,11 +667,11 @@ def get_obstacles_bc(obstacles):
         Z = (Z.shape[0], Z.shape[1]+1, Z.shape[2]+1)
 
         bc_mask_x = torch.ones(Z)
-        bc_mask_y = torch.ones(Z)    
-        bc_value_x = torch.zeros(Z) 
-        bc_value_y = torch.zeros(Z) 
+        bc_mask_y = torch.ones(Z)
+        bc_value_x = torch.zeros(Z)
+        bc_value_y = torch.zeros(Z)
 
-        for object_mask, wr, inverse in obstacles: #TODO: way of autodetecting inverse so not necessary to pass always
+        for object_mask, wr, inverse in obstacles:
             for i in range(Z[0]):
                 print("I {}".format(i))
                 bc_mask_x[i], bc_mask_y[i], bc_value_x[i], bc_value_y[i] = set_normal_bc2(bc_mask_x[i], bc_mask_y[i], bc_value_x[i], bc_value_y[i], object_mask[i])
@@ -762,7 +689,7 @@ def get_obstacles_bc(obstacles):
 
         bc_mask_x = torch.ones(Z)
         bc_mask_y = torch.ones(Z)
-        bc_value_x = torch.zeros(Z) 
+        bc_value_x = torch.zeros(Z)
         bc_value_y = torch.zeros(Z)
 
         for object_mask, wr, inverse in obstacles:

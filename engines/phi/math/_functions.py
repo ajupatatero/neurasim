@@ -26,12 +26,12 @@ def choose_backend_t(*values, prefer_default=False):
 def all_available(*values: Tensor):
     """
     Tests if the values of all given tensors are known and can be read at this point.
-    
+
     Tensors are typically available when the backend operates in eager mode.
 
     Args:
       values: tensors to check
-      *values: Tensor: 
+      *values: Tensor:
 
     Returns:
       bool
@@ -48,7 +48,7 @@ def all_available(*values: Tensor):
 def print_(value: Tensor = None, name: str = None):
     """
     Print a tensor with no more than two spatial dimensions, splitting it along all batch and channel dimensions.
-    
+
     Unlike regular printing, the primary dimension, typically x, is oriented to the right.
 
     Args:
@@ -119,14 +119,14 @@ def _initialize(uniform_initializer, shape=EMPTY_SHAPE, dtype=None, **dimensions
 def zeros(shape=EMPTY_SHAPE, dtype=None, **dimensions):
     """
     Define a tensor with specified shape with value 0 / False everywhere.
-    
+
     This method may not immediately allocate the memory to store the values.
 
     Args:
       shape: base tensor shape (Default value = EMPTY_SHAPE)
       dtype: data type (Default value = None)
       dimensions: additional dimensions, types are determined from names
-      **dimensions: 
+      **dimensions:
 
     Returns:
       tensor of specified shape
@@ -142,14 +142,14 @@ def zeros_like(tensor: Tensor):
 def ones(shape=EMPTY_SHAPE, dtype=None, **dimensions):
     """
     Define a tensor with specified shape with value 1 / True everywhere.
-    
+
     This method may not immediately allocate the memory to store the values.
 
     Args:
       shape: base tensor shape (Default value = EMPTY_SHAPE)
       dtype: data type (Default value = None)
       dimensions: additional dimensions, types are determined from names
-      **dimensions: 
+      **dimensions:
 
     Returns:
       tensor of specified shape
@@ -212,7 +212,7 @@ def meshgrid(**dimensions):
     generate a TensorStack meshgrid from keyword dimensions
 
     Args:
-      **dimensions: 
+      **dimensions:
 
     Returns:
 
@@ -270,8 +270,8 @@ def concat(values: tuple or list, dim: str) -> Tensor:
     Args:
       values: Tensors to concatenate
       dim: concat dimension, must be present in all values
-      values: tuple or list: 
-      dim: str: 
+      values: tuple or list:
+      dim: str:
 
     Returns:
       concatenated tensor
@@ -287,16 +287,16 @@ def concat(values: tuple or list, dim: str) -> Tensor:
 def pad(value: Tensor, widths: dict, mode: 'extrapolation.Extrapolation') -> Tensor:
     """
     Pads a tensor along the specified dimensions, determining the added values using the given extrapolation.
-    
+
     This is equivalent to calling `mode.pad(value, widths)`.
 
     Args:
       value: tensor to be padded
       widths: name: str -> (lower: int, upper: int)
       mode: Extrapolation object
-      value: Tensor: 
-      widths: dict: 
-      mode: 'extrapolation.Extrapolation': 
+      value: Tensor:
+      widths: dict:
+      mode: 'extrapolation.Extrapolation':
 
     Returns:
       padded Tensor
@@ -532,7 +532,7 @@ def where(condition: Tensor or float or int, value_true: Tensor or float or int,
     """
     Builds a tensor by choosing either values from `value_true` or `value_false` depending on `condition`.
     If `condition` is not of type boolean, non-zero values are interpreted as True.
-    
+
     This function requires non-None values for `value_true` and `value_false`.
     To get the indices of True / non-zero values, use :func:`nonzero`.
 
@@ -540,9 +540,9 @@ def where(condition: Tensor or float or int, value_true: Tensor or float or int,
       condition: determines where to choose values from value_true or from value_false
       value_true: values to pick where condition != 0 / True
       value_false: values to pick where condition == 0 / False
-      condition: Tensor or float or int: 
-      value_true: Tensor or float or int: 
-      value_false: Tensor or float or int: 
+      condition: Tensor or float or int:
+      value_true: Tensor or float or int:
+      value_false: Tensor or float or int:
 
     Returns:
       tensor containing dimensions of all inputs
@@ -557,7 +557,7 @@ def where(condition: Tensor or float or int, value_true: Tensor or float or int,
 def nonzero(value: Tensor, list_dim='nonzero', index_dim='vector'):
     """
     Get spatial indices of non-zero / True values.
-    
+
     Batch dimensions are preserved by this operation.
     If channel dimensions are present, this method returns the indices where any entry is nonzero.
 
@@ -565,7 +565,7 @@ def nonzero(value: Tensor, list_dim='nonzero', index_dim='vector'):
       value: spatial tensor to find non-zero / True values in.
       list_dim: name of dimension listing non-zero values (Default value = 'nonzero')
       index_dim: name of index dimension (Default value = 'vector')
-      value: Tensor: 
+      value: Tensor:
 
     Returns:
       tensor of shape (batch dims..., list_dim=#non-zero, index_dim=value.shape.spatial_rank)
@@ -735,14 +735,14 @@ def exp(x: Tensor) -> Tensor:
 def to_float(x: Tensor) -> Tensor:
     """
     Converts the given tensor to floating point format with the currently specified precision.
-    
+
     The precision can be set globally using `math.set_global_precision()` and locally using `with math.precision()`.
-    
+
     See the `phi.math` module documentation at https://tum-pbs.github.io/PhiFlow/Math.html
 
     Args:
       x: values to convert
-      x: Tensor: 
+      x: Tensor:
 
     Returns:
       Tensor of same shape as `x`
@@ -886,12 +886,12 @@ def scatter(indices: Tensor,
 def fft(x: Tensor):
     """
     Performs a fast Fourier transform (FFT) on all spatial dimensions of x.
-    
+
     The inverse operation is :func:`ifft`.
 
     Args:
       x: tensor of type float or complex
-      x: Tensor: 
+      x: Tensor:
 
     Returns:
       FFT(x) of type complex
@@ -953,7 +953,7 @@ def _invertible_standard_form(value: Tensor):
 
     Args:
       value: tensor to reshape
-      value: Tensor: 
+      value: Tensor:
 
     Returns:
       reshaped native tensor, inverse function
@@ -975,7 +975,7 @@ def _invertible_standard_form(value: Tensor):
 def close(*tensors, rel_tolerance=1e-5, abs_tolerance=0):
     """
     Checks whether all tensors have equal values within the specified tolerance.
-    
+
     Does not check that the shapes exactly match.
     Tensors with different shapes are reshaped before comparing.
 
@@ -983,7 +983,7 @@ def close(*tensors, rel_tolerance=1e-5, abs_tolerance=0):
       tensors: tensor or tensor-like (constant) each
       rel_tolerance: relative tolerance (Default value = 1e-5)
       abs_tolerance: absolute tolerance (Default value = 0)
-      *tensors: 
+      *tensors:
 
     Returns:
 
@@ -1010,7 +1010,7 @@ def assert_close(*tensors,
     """
     Checks that all tensors have equal values within the specified tolerance.
     Raises an AssertionError if the values of this tensor are not within tolerance of any of the other tensors.
-    
+
     Does not check that the shapes exactly match.
     Tensors with different shapes are reshaped before comparing.
 
@@ -1018,7 +1018,7 @@ def assert_close(*tensors,
       tensors: tensor or tensor-like (constant) each
       rel_tolerance: relative tolerance (Default value = 1e-5)
       abs_tolerance: absolute tolerance (Default value = 0)
-      *tensors: 
+      *tensors:
 
     Returns:
 
@@ -1280,7 +1280,6 @@ def solve(operator,
                 operator_or_matrix = Ax_track.build_sparse_coordinate_matrix()
             except NotImplementedError as err:
                 warnings.warn(f"Failed to build sparse matrix, using function directly. {err}")
-            # TODO reshape x0, y so that independent dimensions are batch
             build_time = time.perf_counter() - build_time
         if operator_or_matrix is None:
             def operator_or_matrix(native_x):

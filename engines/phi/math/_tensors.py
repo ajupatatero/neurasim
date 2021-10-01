@@ -29,9 +29,9 @@ class Tensor:
     def native(self, order: str or tuple or list = None):
         """
         Returns a native tensor object with the dimensions ordered according to `order`.
-        
+
         Transposes the underlying tensor to match the name order and adds singleton dimensions for new dimension names.
-        
+
         If a dimension of the tensor is not listed in `order`, a `ValueError` is raised.
 
         Args:
@@ -48,12 +48,12 @@ class Tensor:
     def numpy(self, order: str or tuple or list = None) -> np.ndarray:
         """
         Returns this tensor as a NumPy ndarray object with dimensions ordered according to `order`.
-        
+
         *Note*: Using this function breaks the autograd chain. The returned tensor is not differentiable.
         To get a differentiable tensor, use :func:`Tensor.native` instead.
-        
+
         Transposes the underlying tensor to match the name order and adds singleton dimensions for new dimension names.
-        
+
         If a dimension of the tensor is not listed in `order`, a `ValueError` is raised.
 
         Args:
@@ -95,9 +95,9 @@ class Tensor:
         """
         Special tensors store additional internal information.
         They should not be converted to native() in intermediate operations.
-        
+
         Tracking tensors are special tensors.
-        
+
         TensorStack prevents performing the actual stack operation if one of its component tensors is special.
 
         Args:
@@ -180,7 +180,7 @@ class Tensor:
 
         Args:
           selection: dim_name: str -> int or slice
-          selection: dict: 
+          selection: dict:
 
         Returns:
 
@@ -394,7 +394,7 @@ class Tensor:
           other: second argument
           operator: function (Tensor, Tensor) -> Tensor, used to propagate the operation to children tensors to have Python choose the callee
           native_function: function (native tensor, native tensor) -> native tensor
-          other: 'Tensor': 
+          other: 'Tensor':
           operator: Callable:
           native_function: Callable:
 
@@ -1030,7 +1030,7 @@ class TensorStack(Tensor):
                 return sum(red_inners[1:], red_inners[0])
             else:
                 natives = [t.native() for t in red_inners]
-                result = native_function(choose_backend(*natives), natives, dim=0)  # TODO not necessary if tensors are CollapsedTensors
+                result = native_function(choose_backend(*natives), natives, dim=0)
                 return NativeTensor(result, red_inners[0].shape)
         else:
             return TensorStack(red_inners, self.stack_dim_name, self.stack_dim_type)
@@ -1060,16 +1060,16 @@ def tensor(data: Tensor or Shape or tuple or list or numbers.Number,
     If `convert=True`, converts `data` to the preferred format of the default backend.
 
     `data` must be one of the following:
-    
+
     * Number: returns a dimensionless Tensor.
     * Native tensor such as NumPy array, TensorFlow tensor or PyTorch tensor.
     * `tuple` or `list` of numbers: backs the Tensor with native tensor.
     * `tuple` or `list` of non-numbers: creates tensors for the items and stacks them.
     * Tensor: renames dimensions and dimension types if `names` is specified. Converts all internal native values of the tensor if `convert=True`.
     * Shape: creates a 1D tensor listing the dimension sizes.
-    
+
     While specifying `names` is optional in some cases, it is recommended to always specify them.
-    
+
     Dimension types are always inferred from the dimension names if specified.
 
     See Also:
@@ -1153,7 +1153,7 @@ def broadcastable_native_tensors(*tensors):
 
     Args:
       tensors: sequence of Tensors
-      *tensors: 
+      *tensors:
 
     Returns:
       shape, native tensors)
@@ -1176,10 +1176,10 @@ def custom_op2(x: Tensor or float, y: Tensor or float, l_operator, l_native_func
     This method first tries calling _op2() on the first tensor and if that fails, tries it on the second tensor.
 
     Args:
-      x: Tensor or float: 
-      y: Tensor or float: 
-      l_operator: 
-      l_native_function: 
+      x: Tensor or float:
+      y: Tensor or float:
+      l_operator:
+      l_native_function:
       r_operator:  (Default value = None)
       r_native_function:  (Default value = None)
 

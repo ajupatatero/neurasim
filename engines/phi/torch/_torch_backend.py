@@ -76,7 +76,7 @@ class TorchBackend(Backend):
         return tensor
 
     def is_available(self, tensor) -> bool:
-        return True  # ToDo may require different handling for TorchScript
+        return True
 
     def numpy(self, tensor):
         if tensor.requires_grad:
@@ -153,7 +153,7 @@ class TorchBackend(Backend):
             pad_width_reordered = pad_width
             undo_transform = lambda x: torch.squeeze(torch.squeeze(x, 0), 0)
         else:
-            raise NotImplementedError()  # TODO transpose to get (0, 0) to the front
+            raise NotImplementedError()
         pad_width_spatial = [item for sublist in reversed(pad_width_reordered) for item in sublist]  # flatten
         try:
             result = torchf.pad(reordered, pad_width_spatial, mode, value=constant_values)  # supports 3D to 5D (2 + 1D to 3D)
@@ -183,8 +183,6 @@ class TorchBackend(Backend):
         return result
 
     def reshape(self, value, shape):
-        # if not value.is_complex():
-        #     value = value.view_as_complex()
         return torch.reshape(value, shape)
 
     def flip(self, value, axes: tuple or list):

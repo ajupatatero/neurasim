@@ -23,7 +23,7 @@ class AngularVelocity(Field):
         strength = self.strength if self.falloff is None else self.strength * self.falloff(distances)
         if reduce_channels:
             assert len(reduce_channels) == 1
-            velocities = [math.cross_product(strength, dist).vector[i] for i, dist in enumerate(distances.unstack(reduce_channels[0]))]  # TODO this is inefficient, computes components that are discarded
+            velocities = [math.cross_product(strength, dist).vector[i] for i, dist in enumerate(distances.unstack(reduce_channels[0]))]
             velocity = math.channel_stack(velocities, 'vector')
         else:
             velocity = math.cross_product(strength, distances)

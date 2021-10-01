@@ -1,7 +1,6 @@
 import numpy as np
 
 def export_csv(file_path,field, Lx, Ly, dx, dy):
-    #TODO:
     timestep=0
 
 

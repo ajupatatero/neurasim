@@ -47,14 +47,14 @@ args = parser.parse_args()
 
 # Addtional parameter to check the Ri number, plot it and margin Percent
 margin_perc = args.Percen
-cg_analysis = args.cgmetric == 'True' or args.cgmetric == 'true' 
+cg_analysis = args.cgmetric == 'True' or args.cgmetric == 'true'
 Ti = 99
 Ri = args.richardson
 
 if cg_analysis:
     Networks = ['CG', 'nolt_3',
-                'lt_grad_1_2', 'lt_grad_2_4', 'lt_grad_2_6', 
-                'lt_nograd_2_4', 'lt_nograd_4_8', 'lt_nograd_4_16']  
+                'lt_grad_1_2', 'lt_grad_2_4', 'lt_grad_2_6',
+                'lt_nograd_2_4', 'lt_nograd_4_8', 'lt_nograd_4_16']
 
 colors = ['blue', 'red', 'green']
 
@@ -69,7 +69,7 @@ elif Ri == '10_0':
 res = 128
 
 # Base folders and Networks
-folder =  '/tmpdir/ajuriail/neuralsim/cases/18_plume/'
+folder =  '/path/to/case/'
 folder_im = folder + 'Images/CG/'
 
 if not os.path.exists(folder_im):
@@ -79,7 +79,7 @@ if not os.path.exists(folder_im):
 pos_array = np.zeros((len(Networks), Ti))
 integral_values = np.zeros((len(Networks)-1))
 ninety_points = np.zeros((len(Networks)-1))
-ref_integral = np.zeros((Ti)) 
+ref_integral = np.zeros((Ti))
 
 # Max density to follow the plume
 max_density = 0.01
@@ -103,7 +103,7 @@ for i, network in enumerate(Networks):
 
         folderfile = folder_load + filename
         rho_loaded = np.load(folderfile)
-        
+
         # Get center line and loop through to get head's position
         Line_rho = rho_loaded[0, res//2, :]
 
@@ -131,14 +131,12 @@ for i, network in enumerate(Networks):
 
     plt.plot(x_range[1:-1], Pixels_sum[1:-1]/res, color=colors[i%3], linestyle='dashed', linewidth=1, markersize=8, label = network)
 
-    
+
 savefile_png = folder_im + 'Head_Ri_{}.png'.format(Ri)
 savefile_pdf = folder_im + 'Head_Ri_{}.png'.format(Ri)
 
 
 plt.legend(fontsize=12)
-#plt.yscale("log")
-#plt.ylim(0,0.025)
 plt.locator_params(axis='y', nbins=5)
 plt.locator_params(axis='x', nbins=6)
 plt.xticks(fontsize=12)

@@ -7,7 +7,7 @@ class Simulation():
     '''Higher hierarchy simulation type class of Neurasim software. All other simulation classes must depend on this one. '''
 
     def __init__(self, config):
-        '''Constructor of the Simulation basic and general class. Within you can find all the options and paramaters 
+        '''Constructor of the Simulation basic and general class. Within you can find all the options and paramaters
         common to any kind of simulation type. Besides, in here, you can define its default values in case not specified in the config.yaml.
         '''
 
@@ -30,9 +30,8 @@ class Simulation():
             self.DEBUG = config['DEBUG']
         except:
             self.DEBUG = False
-        
+
         #VERBAROSE OPTIONS
-        #TODO: make more detailed options
         warnings.filterwarnings("ignore") #To disable noisy warnings.
 
         #MAX TIME OF RUNNING BEFORE RELAUNCHING
@@ -131,7 +130,7 @@ class Simulation():
             self.load_path = config['network_params']['load_path']
             self.network_name = config['network_params']['model_name']
             self.new_train= config['network_params']['new_train'] == 'new'
-            
+
             if self.new_train:
                 self.config_norm = config['normalization']
 
@@ -139,7 +138,7 @@ class Simulation():
                 self.ite_transition = config['ite_transition']
             except:
                 self.ite_transition=0
-        
+
         #TOLERANCE OR PRECISION OF THE LAPLACE MATRIX SOLVER (used in all solvers. i.e. in convnet before ite transition!)
         try:
             self.precision = int(float(config['precision']))
@@ -156,41 +155,38 @@ class Simulation():
         ################################
         #   DISCRETITATION & GEOMETRY  #
         ################################
-        #TODO: check if parsed dx or Nx and calculate the other
         self.Lx=config['Lx']
         self.Ly=config['Ly']
 
-        self.Nx=config['Nx'] 
-        self.Ny=config['Ny'] 
+        self.Nx=config['Nx']
+        self.Ny=config['Ny']
         self.Nt=config['Nt']
         self.CFL = config['CFL']
 
         self.dx=self.Lx/self.Nx
         self.dy=self.Ly/self.Ny
-        self.dt= self.dx * self.CFL #TODO: dt = CFL* max(dx, dy)......
+        self.dt= self.dx * self.CFL
 
     def run(self):
         print('This general class has no running scheme defined. You need to use a lower level class.')
         error()
-    
+
     def prepare_resume(self):
         '''Function that prepares all the files and folders to stop the current instance of the simulation run.
         And to start a new one following the overall simulation. Meaning, it saves the basic simulation fields.
         It creates the temporal folders and slurm launch files. And send a launch on slurm as well.
-        
-        
+
+
         NOTICE: in pando supercomputer (ISAE-SUPAERO) has been notice that the folders have to be created manually before.
         '''
 
-        #TODO: see if we can eliminate the vel mask fields
-        
         #1.Save simulation fields
         self.velocity_x_field.append(self.velocity.staggered_tensor().tensors[0]._native.cpu().numpy())
         self.velocity_y_field.append(self.velocity.staggered_tensor().tensors[1]._native.cpu().numpy())
         self.pressure_field.append(self.pressure.values._native.cpu().numpy())
         self.vel_mask_x_field.append(self.vel_mask.staggered_tensor().tensors[0]._native.cpu().numpy())
         self.vel_mask_y_field.append(self.vel_mask.staggered_tensor().tensors[1]._native.cpu().numpy())
-        self.iteration_field.append(self.ite)  
+        self.iteration_field.append(self.ite)
 
         np.save(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_y_field.npy', self.velocity_y_field)
         np.save(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_pressure_field.npy', self.pressure_field)
@@ -198,22 +194,22 @@ class Simulation():
         np.save(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vel_mask_y_field.npy', self.vel_mask_y_field)
         np.save(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity_x_field.npy', self.velocity_x_field )
         np.save(f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_iteration_field.npy', self.iteration_field)
-        
+
         #2.1.Create temporal folder
         if not os.path.isdir('./temporal_resume/'):
             os.makedirs('./temporal_resume/') #NOTICE: in pando before manually!!!
 
-        #2.2.Create new config file 
+        #2.2.Create new config file
         with open(f'./temporal_resume/config_simulation.yaml', 'w') as file:
             self.config_copy['resume']=True
             try:
                 self.config_copy['resume_count'] = self.config_copy['resume_count'] + 1
             except:
                 self.config_copy['resume_count'] = 1
-            
+
             yaml.dump(self.config_copy, file)
 
-        #2.3.Create new launch file 
+        #2.3.Create new launch file
         with open("./temporal_resume/launcher.sh", "w") as file:
             file.write("#!/bin/bash\n\n\n")
 
@@ -224,21 +220,19 @@ class Simulation():
             file.write("#SBATCH --time=24:00:00\n")
             file.write("#SBATCH --begin=now\n")
             file.write(f"#SBATCH --job-name=+{self.config_copy['resume_count'] * 24}h_extension\n")
-            #file.write("#SBATCH --mail-type=END,FAIL\n")
-            #file.write("#SBATCH --mail-user=antonio.gimenez-nadal@student.isae-supaero.fr\n")
             file.write("#SBATCH --output=./results/slurm.%j.out\n")
             file.write("#SBATCH --error=./results/slurm.%j.err\n\n\n")
 
             file.write("source $HOME/fluidnet_env/bin/activate\n")
             file.write("simulate --conf_dir './temporal_resume/'\n")
-            
+
             file.close()
-        
+
         #3.Launch new job
         os.system('sbatch ./temporal_resume/launcher.sh')
 
     def load_model(self):
-        
+
         mpath = glob.os.path.join(self.load_path, 'convModel_lastEpoch_best.pth')
         assert glob.os.path.isfile(mpath), mpath  + ' does not exits!'
         cpath = glob.os.path.join(self.load_path, 'convModel_conf.pth')
@@ -249,10 +243,10 @@ class Simulation():
             self.conf = torch.load(cpath)
             self.mconf = torch.load(mcpath)
         else:
-            state = torch.load(mpath, map_location=torch.device('cpu'))  
+            state = torch.load(mpath, map_location=torch.device('cpu'))
             self.conf = torch.load(cpath, map_location=torch.device('cpu'))
             self.mconf = torch.load(mcpath, map_location=torch.device('cpu'))
-        
+
 
         temp_model = glob.os.path.join(self.load_path, self.network_name +  '_saved.py')
         assert glob.os.path.isfile(temp_model), temp_model  + ' does not exits!'

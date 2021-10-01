@@ -30,7 +30,6 @@ class VonKarman(WindTunnel):
 
         self.BCx = config['BC_domain_x']
 
-        #TODO: limpiar metodo, y ampliar en caso de BC: (OPEN, CLOSED)
         if self.BCx == 'OPEN':
             self.BCx = OPEN
         elif self.BCx == 'CLOSED':
@@ -42,7 +41,6 @@ class VonKarman(WindTunnel):
             exit()
 
         self.BCy = config['BC_domain_y']
-        #TODO: limpiar metodo, y ampliar en caso de BC: (OPEN, CLOSED)
         if self.BCy == 'OPEN':
             self.BCy = OPEN
         elif self.BCy == 'CLOSED':
@@ -57,10 +55,6 @@ class VonKarman(WindTunnel):
             self.flags = torch.zeros(1, 1, 1, self.Ny, self.Nx).cuda()
         else:
             self.flags = torch.zeros(1, 1, 1, self.Ny, self.Nx)
-        #self.flags[:, :, :, 0, :] = 1
-        #self.flags[:, :, :, -1, :] = 1
-        #self.flags[:, :, :, :, 0] = 1
-        #self.flags[:, :, :, :, -1] = 1
 
     def run(self):
         if self.GPU == True:
@@ -83,7 +77,6 @@ class VonKarman(WindTunnel):
         obstacle = Obstacle(Sphere([self.xD, self.Ly/2], radius=self.D/2), angular_velocity=0.0)
         FORCES_MASK = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2)) >> DOMAIN.scalar_grid()
         self.flags += FORCES_MASK.values._native
-        #FORCES_MASK = FORCES_MASK.values._native.cpu().numpy()  in theory not necessary
 
         #INITIALIZE FIELDS
         bsz = 1
@@ -105,7 +98,6 @@ class VonKarman(WindTunnel):
         pressure_field=[]
         iteration_field=[]
 
-        #TODO: multithread
         gif_pressure = GIF(gifname=f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_pressure', total_frames=self.Nt)
         gif_vorticity = GIF(gifname=f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_vorticity', total_frames=self.Nt)
         gif_velocity = GIF(gifname=f'{self.out_dir}A_{self.alpha}_RE_{self.Re}_dx_{self.Nx}_{self.Ny}_velocity', total_frames=self.Nt)
@@ -179,12 +171,10 @@ class VonKarman(WindTunnel):
 
             #2.2.CALCULATE FORCES
                 hforce[ite], vforce[ite] = calculate_forces(pressure, FORCES_MASK, self.dx, self.dy)
-                #hforce[ite], vforce[ite] = calculate_forces_with_momentum(pressure, velocity, FORCES_MASK, factor=1, rho=1, dx=self.dx, dy=self.dy)
 
             #2.3.PLOT RESULTS
             zoom_pos=[self.xD - self.D, self.xD + self.D,
                       self.Ly/2 -self.D, self.Ly/2 + self.D]
-            #edges = [ [edge_hl_x, edge_hl_y], [edge_hr_x, edge_hr_y], [edge_vb_x, edge_vb_y], [edge_vt_x, edge_vt_y] ]
 
             if ite%100== 0:
                 gif_pressure.add_frame(ite, pressure, plot_type=['surface'],
@@ -206,7 +196,6 @@ class VonKarman(WindTunnel):
                                 ['zoom_position',zoom_pos] ],
                         lx='x', ly='y', lbar='norm velocity []', ltitle=f'VK @ t={np.round(self.dt*ite, decimals=2)} s [ Re={self.Re}, N=[{self.Nx}x{self.Ny}] ]')
 
-                # DEBUG Ekhi
                 vel_x = velocity.staggered_tensor().tensors[0]._native.cpu().numpy()[0]
                 vel_y = velocity.staggered_tensor().tensors[1]._native.cpu().numpy()[0]
 
@@ -451,8 +440,7 @@ class VonKarman_rotative(VonKarman):
 
         self.cylinder = Obstacle(Sphere([self.xD, self.Ly/2], radius=self.D/2), angular_velocity=self.w)
         self.CYLINDER = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2 )) >> self.DOMAIN.scalar_grid()
-        #TODO: hacer que obstacle sea input ok de forces() y hacer obs.geom >>
-        self.flags += self.CYLINDER.values._native.transpose(-1, -2) #TODO: clean, all with one mask only
+        self.flags += self.CYLINDER.values._native.transpose(-1, -2)
 
 
         self.CYLINDER_2 = HardGeometryMask(Sphere([self.xD, self.Ly/2], radius=self.D/2 + 2*self.dx )) >> self.DOMAIN.scalar_grid()

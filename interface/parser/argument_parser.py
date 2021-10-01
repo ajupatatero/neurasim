@@ -98,7 +98,7 @@ class InputParser():
         '''
         Function to check that all the parameters necessary for a given simulation have been passed.
 
-        TODO: since all the required parameters should be provided in the parser as default this function will be
+        Since all the required parameters should be provided in the parser as default this function will be
         eventually removed. But for the moment, just in case is conserved.
 
         '''

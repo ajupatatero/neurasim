@@ -79,9 +79,6 @@ class Plume(Simulation):
             tensor_U_unstack = unstack_staggered_tensor(tensor_U)
             self.velocity =  StaggeredGrid(tensor_U_unstack, self.DOMAIN.bounds)
 
-            #TODO: use the staggered function, verify if ok
-
-
             try:
                 velmaskx = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vel_mask_x_field.npy')[-1,0,:,:]
                 velmasky = np.load(f'{self.out_dir}Ri_{self.Ri}_dx_{self.Nx}_{self.Ny}_vel_mask_y_field.npy')[-1,0,:,:]

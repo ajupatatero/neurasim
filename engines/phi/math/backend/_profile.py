@@ -409,7 +409,6 @@ class ProfilingBackend:
         self.dtype = backend.dtype
         self.expand_dims = backend.expand_dims
         self.reshape = backend.reshape
-        # TODO strided slice does not go through backend atm
         # profiling methods
         for item_name in dir(backend):
             item = getattr(backend, item_name)

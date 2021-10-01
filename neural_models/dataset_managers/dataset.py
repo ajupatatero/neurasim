@@ -30,7 +30,6 @@ class FluidNetDataset(Dataset):
         # Check how many timesteps per scene there are.
         #self.step_per_scene = len(glob.glob(glob.os.path.join(self.base_dir, \
         #                          self.scenes_folders[0], '*[0-9].bin')))
-        # TODO (Remove this): Hard-coded (there are 64 steps per scene)
         self.step_per_scene = 64
 
         self.pr_loader = loadMantaFile

@@ -29,9 +29,9 @@ class AbstractBox(Geometry):
     def center(self) -> Tensor:
         """
         Center point of the geometry or geometry batch.
-        
+
         The shape of the location extends the shape of the Geometry by a `vector` dimension.
-        
+
         :return: Tensor describing the center location(s)
 
         Args:
@@ -131,9 +131,9 @@ class AbstractBox(Geometry):
 class BoxType(type):
     """
     Convenience function for creating N-dimensional boxes / cuboids.
-    
+
     Examples to create a box from (0, 0) to (10, 20):
-    
+
     * box[0:10, 0:20]
     * box((0, 0), (10, 20))
     * box((5, 10), size=(10, 20))
@@ -185,7 +185,7 @@ class Box(AbstractBox, metaclass=BoxType):
         self._shape = _fill_spatial_with_singleton(self._lower.shape & self._upper.shape).non_channel
 
     def unstack(self, dimension):
-        raise NotImplementedError()  # TODO
+        raise NotImplementedError()
 
     def __eq__(self, other):
         return isinstance(other, AbstractBox) and self._lower.shape == other.lower.shape and math.close(self._lower, other.lower)
@@ -297,9 +297,9 @@ class GridCell(AbstractBox):
     def center(self):
         """
         Center point of the box or batch of boxes.
-        
+
         The shape of the location extends the shape of the Box instance by a `vector` dimension.
-        
+
         :return: Tensor describing the center location(s)
 
         Args:

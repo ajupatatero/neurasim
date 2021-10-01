@@ -32,7 +32,7 @@ class Extrapolation:
     def to_dict(self) -> dict:
         """
         Serialize this extrapolation to a dictionary that is serializable (JSON-writable).
-        
+
         Use `from_dict()` to restore the Extrapolation object.
         """
         raise NotImplementedError()
@@ -48,8 +48,8 @@ class Extrapolation:
         Args:
           value: tensor to be padded
           widths: name: str -> (lower: int, upper: int)}
-          value: Tensor: 
-          widths: dict: 
+          value: Tensor:
+          widths: dict:
 
         Returns:
 
@@ -73,10 +73,10 @@ class Extrapolation:
           width: number of cells to pad perpendicular to the face. Must be larger than zero.
           dimension: axis in which to pad
           upper_edge: True for upper edge, False for lower edge
-          value: Tensor: 
-          width: int: 
-          dimension: str: 
-          upper_edge: bool: 
+          value: Tensor:
+          width: int:
+          dimension: str:
+          upper_edge: bool:
 
         Returns:
           tensor that can be concatenated to value for padding
@@ -87,7 +87,7 @@ class Extrapolation:
     def transform_coordinates(self, coordinates: Tensor, shape: Shape) -> Tensor:
         """
         If is_copy_pad, transforms outsider coordinates to point to the index from which the value should be copied.
-        
+
         Otherwise, the grid tensor is assumed to hold the correct boundary values for this extrapolation at the edge.
         Coordinates are then snapped to the valid index range.
         This is the default implementation.
@@ -95,8 +95,8 @@ class Extrapolation:
         Args:
           coordinates: integer coordinates in index space
           shape: tensor shape
-          coordinates: Tensor: 
-          shape: Shape: 
+          coordinates: Tensor:
+          shape: Shape:
 
         Returns:
           transformed coordinates
@@ -143,8 +143,8 @@ class ConstantExtrapolation(Extrapolation):
         Args:
           value: tensor to be padded
           widths: name: str -> (lower: int, upper: int)}
-          value: Tensor: 
-          widths: dict: 
+          value: Tensor:
+          widths: dict:
 
         Returns:
 
@@ -180,7 +180,7 @@ class ConstantExtrapolation(Extrapolation):
             return TensorStack(tensors, value.stack_dim_name, value.stack_dim_type)
         elif isinstance(value, SparseLinearOperation):
             (row, col), data = choose_backend(value.dependency_matrix).coordinates(value.dependency_matrix, unstack_coordinates=True)
-            assert len(value.shape) == 2  # TODO nd
+            assert len(value.shape) == 2
             y = row // value.shape[1]
             dy0, dy1 = widths[value.shape.names[0]]
             dx0, dx1 = widths[value.shape.names[1]]
@@ -408,8 +408,8 @@ class _BoundaryExtrapolation(_CopyExtrapolation):
         To take corners into account, call pad() for each axis individually. This is inefficient with ShiftLinOp.
 
         Args:
-          value: ShiftLinOp: 
-          widths: dict: 
+          value: ShiftLinOp:
+          widths: dict:
 
         Returns:
 
@@ -550,7 +550,7 @@ def combine_sides(extrapolations: dict) -> Extrapolation:
 
     Args:
       extrapolations: dict mapping dim: str -> extrapolation or (lower, upper)
-      extrapolations: dict: 
+      extrapolations: dict:
 
     Returns:
       single extrapolation
@@ -618,8 +618,8 @@ class _MixedExtrapolation(Extrapolation):
         Args:
           value: tensor to be padded
           widths: name: str -> (lower: int, upper: int)}
-          value: Tensor: 
-          widths: dict: 
+          value: Tensor:
+          widths: dict:
 
         Returns:
 
