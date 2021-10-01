@@ -70,8 +70,6 @@ class MultiScaleNetMonoBig(nn.Module):
     """
     def __init__(self,data_channels):
         super(MultiScaleNetMonoBig, self).__init__()
-        #self.convN_4 = _ConvBlock1(data_channels, 32,64,1)
-        #self.convN_2 = _ConvBlock2(data_channels+1, 32,64,128,1)
         self.convN_1 = _ConvBlock3(data_channels, 32,32,128,128,8)
         self.final = nn.Conv2d(8,1, kernel_size = 1)
 
@@ -84,14 +82,8 @@ class MultiScaleNetMonoBig(nn.Module):
             event_1 = torch.cuda.Event(enable_timing=True)
             event_2 = torch.cuda.Event(enable_timing=True)
             event_3 = torch.cuda.Event(enable_timing=True)
-            #event_4 = torch.cuda.Event(enable_timing=True)
 
             # Start recording
-            #event_1.record()
-            #torch.cuda.synchronize()
-          
-            #interpol = F.interpolate(x,(x.size()[2:]),mode = 'bilinear',align_corners=align)
-
             event_1.record()
             torch.cuda.synchronize()
 
@@ -107,18 +99,14 @@ class MultiScaleNetMonoBig(nn.Module):
 
             elapsed_time_1 = event_1.elapsed_time(event_2)
             elapsed_time_2 = event_2.elapsed_time(event_3)
-            #elapsed_time_3 = event_3.elapsed_time(event_4)
             elapsed_time_total = event_1.elapsed_time(event_3)
 
             print("Elapsed Total Time: ",elapsed_time_total)
             print("Step 1: ",elapsed_time_1)
             print("Step 2: ",elapsed_time_2)
-            #print("Step 3: ",elapsed_time_3)
 
         else:
 
-            #convN_1out = self.convN_1(F.interpolate(x,(x.size()[2:]),mode = 'bilinear',align_corners=align))
-            #final_out = self.final(convN_1out)
             convN_1out = self.convN_1(x)
             final_out = self.final(convN_1out)
 

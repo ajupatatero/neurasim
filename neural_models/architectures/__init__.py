@@ -1,4 +1,3 @@
-from .Model_TGV import *
 from .multi_scale_net import *
 from .MultiGrid import *
 from .Unet import *

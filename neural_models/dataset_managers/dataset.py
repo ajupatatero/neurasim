@@ -26,7 +26,6 @@ class FluidNetDataset(Dataset):
         # Check number of scenes
         self.n_scenes = len(self.scenes_folders)
         self.scene_0 = int(self.scenes_folders[0])
-        #self.scene_0 = 0
 
         # Check how many timesteps per scene there are.
         #self.step_per_scene = len(glob.glob(glob.os.path.join(self.base_dir, \
@@ -133,20 +132,14 @@ class FluidNetDataset(Dataset):
     # Used only in preprocessing
     def __getitembin__(self, idx):
 
-        #print("index ", idx)
-        #cur_timestep = idx * 4
         cur_scene = idx // self.step_per_scene
         cur_timestep = (idx % (self.step_per_scene)) * self.save_dt
         data_file = glob.os.path.join(self.base_dir, '{0:06d}'.format(cur_scene), \
                                       '{0:06d}.bin'.format(cur_timestep))
 
-        #print( "time step ", cur_timestep)
-        #print( "cur scene ", cur_scene)
-        #data_file = glob.os.path.join(self.base_dir,'{0:06d}.bin'.format(cur_timestep))
-
         data_div_file = glob.os.path.join(self.base_dir, '{0:06d}'.format(cur_scene), \
                                       '{0:06d}_divergent.bin'.format(cur_timestep))
-        #print(" Data file ", data_file)
+
         assert glob.os.path.isfile(data_file), 'Data file ' + data_file +  ' does not exists'
         assert glob.os.path.isfile(data_div_file), 'Data file does not exists'
         p, U, flags, density, is3D = self.pr_loader(data_file)
@@ -156,24 +149,15 @@ class FluidNetDataset(Dataset):
 
         data = torch.cat([pDiv, UDiv, flagsDiv, densityDiv, p, U, density], 1)
 
-        #data = torch.cat([flags, p, U, density], 1)
         save_file = glob.os.path.join(self.base_dir, '{0:06d}'.format(cur_scene), \
                                     '{0:06d}_pyTen.pt'.format(cur_timestep))
 
         save_file = glob.os.path.join(self.base_dir, '{0:06d}_pyTen.pt'.format(cur_timestep))
-        #save_file_1 = glob.os.path.join(self.base_dir, '{0:06d}'.format(cur_timestep))
-
-        #data_np = data.numpy()
-        #np.save(save_file_1, data_np)
         torch.save(data, save_file)
-        #print("Saved ")
 
     # Actual data loader
     def __getitem__(self, idx):
         cur_scene = idx // self.step_per_scene
-        #cur_scene = 64
-        #print("index", idx)
-        #print("self.step_per_scene",self.step_per_scene)
         cur_timestep = (idx % (self.step_per_scene)) * self.save_dt
         data_file = glob.os.path.join(self.base_dir, '{0:06d}'.format(cur_scene), \
                                       '{0:06d}_pyTen.pt'.format(cur_timestep))

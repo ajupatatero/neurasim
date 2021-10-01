@@ -57,7 +57,7 @@ def plot_train(print_list, batch_idx, epoch, data, target, flags, m_path,
         if math.all_available(converged) and not math.all(converged):
             raise AssertionError(f"pressure solve did not converge after {iterations} iterations\nResult: {pressure_CG.values}")
 
-        p_target = pressure_CG.values._native.transpose(-1, -2).unsqueeze(1).unsqueeze(1)#.repeat(1,4,1,1,1)        
+        p_target = pressure_CG.values._native.transpose(-1, -2).unsqueeze(1).unsqueeze(1)#.repeat(1,4,1,1,1)
 
         p_mean_NN = torch.mean(out_p_t[0])
         p_mean_CG = torch.mean(p_target[0])
@@ -414,12 +414,6 @@ def plotField(out, tar, flags, loss, mconf, epoch=None, filename=None, save=Fals
         ax.axis('off')
         ax.imshow(U_norm_out_np, cmap=my_cmap, origin='lower',
                 interpolation='none', clim=[min_val_U_norm,max_val_U_norm])
-        #ax.quiver(X[::skip], Y[::skip],
-        #        Ux_out_np_adm[::skip, ::skip], Uy_out_np_adm[::skip, ::skip],
-        #        scale_units=scale_units,
-        #        angles=angles,
-        #        headwidth=headwidth, headlength=headlength, scale=scale,
-        #        color='pink')
         it_col += 1
 
         ax = plt.subplot(gs[it_row, it_col])
@@ -482,13 +476,7 @@ def plotField(out, tar, flags, loss, mconf, epoch=None, filename=None, save=Fals
                 family='monospace')
         it_row += 1
 
-    #fig.colorbar(imP, cax=cbar_ax_p, orientation='vertical')
-    #cbar_ax_U = fig.add_axes([0.375, 0.45, 0.01, 0.33])
-    #fig.colorbar(imU, cax=cbar_ax_U, orientation='vertical')
-    #fig.set_size_inches((11, 11), forward=False)
     if save:
-        #print('Saving output')
         fig.savefig(filename)
     else:
-        #print('Printing output')
         plt.show(block=True)

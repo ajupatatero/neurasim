@@ -59,7 +59,7 @@ class FluidNet(nn.Module):
     def __init__(self, mconf, it, folder, dropout=True):
         super(FluidNet, self).__init__()
 
-        
+
         self.dropout = dropout
         self.mconf = mconf
         self.inDims = mconf['inputDim']
@@ -106,7 +106,7 @@ class FluidNet(nn.Module):
 
         # For now, we work ONLY in 2d
 
-       
+
         assert self.is3D == False, 'Input can only be 2D'
 
         assert self.mconf['inputChannels']['pDiv'] or \
@@ -199,10 +199,10 @@ class FluidNet(nn.Module):
             print("is X contiguous ", x.is_contiguous())
             # Network it
             p_out = self.multiScale(x)
-            
+
             # Finish recording
             end_event.record()
-            torch.cuda.synchronize()  # Wait for the events to be recorded! 
+            torch.cuda.synchronize()  # Wait for the events to be recorded!
             elapsed_time_ms = start_event.elapsed_time(end_event)
             time = elapsed_time_ms
 
@@ -247,12 +247,6 @@ class FluidNet(nn.Module):
         if not self.is3D:
             p = torch.unsqueeze(p, 2)
 
-        # Correct U = UDiv - grad(p)
-        # flags is the one with Manta's values, not occupancy in [0,1]
-
-        print("IS P contiguous  model line 212", p.is_contiguous())
-        print("P shape model line 213", p.shape)
-
         velocityUpdate(pressure=p, U=UDiv, flags=flags)
 
         # We now UNDO the scale factor we applied on the input.
@@ -274,7 +268,7 @@ class PhiflowNet_old(nn.Module):
     def __init__(self, mconf, it, folder, dropout=True):
         super(PhiflowNet_old, self).__init__()
 
-        
+
         self.dropout = dropout
         self.mconf = mconf
         self.inDims = mconf['inputDim']
@@ -288,7 +282,7 @@ class PhiflowNet_old(nn.Module):
         self.multiScale = UNet(self.inDims)
 
     #def forward(self, input_, velocity, vel_mask, DOMAIN, lt_bool, it,folder):
-    def forward(self, input_, velocity, vel_mask, DOMAIN, lt_bool, it, folder): 
+    def forward(self, input_, velocity, vel_mask, DOMAIN, lt_bool, it, folder):
 
         # data indexes     |           |
         #       (dim 1)    |    2D     |    3D
@@ -305,7 +299,7 @@ class PhiflowNet_old(nn.Module):
 
         # For now, we work ONLY in 2d
 
-       
+
         assert self.is3D == False, 'Input can only be 2D'
 
         assert self.mconf['inputChannels']['pDiv'] or \
@@ -405,10 +399,6 @@ class PhiflowNet_old(nn.Module):
             UDiv_big = torch.zeros((bsz, dim, nnz, nny+1, nnx+1)).cuda()
             UDiv_big[:,:,:,:-1,:-1] = UDiv
 
-            #velocity = DOMAIN.vector_grid(math.wrap(UDiv.squeeze(2), 'batch,vector,x,y'))
-            #velocity = DOMAIN.staggered_grid(math.wrap(UDiv_big.squeeze(2), 'batch,vector,x,y'))
-            #tensor_U = NativeTensor(UDiv_big.squeeze(2), 'batch,vector,y,x')
-
             velocity_init =  DOMAIN.staggered_grid(1)
             tensor_U = math.wrap(UDiv_big.squeeze(2), 'batch,vector,y,x')
             lower = math.wrap(velocity_init.box.lower)
@@ -451,15 +441,12 @@ class PhiflowNet_old(nn.Module):
 
         self.call_num +=1
 
-        pressure, velocity, div_out, div_in = fluid.make_incompressible_with_network(velocity, flags_mask, DOMAIN, self.multiScale, normalize, scale_factor_phi) 
+        pressure, velocity, div_out, div_in = fluid.make_incompressible_with_network(velocity, flags_mask, DOMAIN, self.multiScale, normalize, scale_factor_phi)
 
-        # Network it
-        #p_out = self.multiScale(x)
-    
 
         # Finish recording
         end_event.record()
-        torch.cuda.synchronize()  # Wait for the events to be recorded! 
+        torch.cuda.synchronize()  # Wait for the events to be recorded!
         elapsed_time_ms = start_event.elapsed_time(end_event)
         time = elapsed_time_ms
 
@@ -476,7 +463,7 @@ class PhiflowNet(nn.Module):
     def __init__(self, mconf, it, folder, dropout=True):
         super(PhiflowNet, self).__init__()
 
-        
+
         self.dropout = dropout
         self.mconf = mconf
         self.inDims = mconf['inputDim']
@@ -502,11 +489,6 @@ class PhiflowNet(nn.Module):
         div_in = divergence(input_velocity)
         div_torch = div_in.values._native.transpose(-1, -2).unsqueeze(1).unsqueeze(2)
 
-        #UDiv = torch.cat((velocity.staggered_tensor().tensors[0]._native.transpose(-1, -2).unsqueeze(1),
-        #                velocity.staggered_tensor().tensors[1]._native.transpose(-1, -2).unsqueeze(1)), dim=1)[:,:,:-1,:-1]
-        #UDiv = UDiv.unsqueeze(2).contiguous() 
-        #div_torch = velocityDivergence(UDiv, flags)
-
         # Generate network input
         #div_torch = div_in.values._native.unsqueeze(1)
         if norm_conf['normalize']:
@@ -521,26 +503,13 @@ class PhiflowNet(nn.Module):
             std_mask_p = (std_mask_p *0 )+1
             std_mask_v = (std_mask_v *0 )+1
 
-        #div_torch *= flags
-
-        #div_in = CenteredGrid(math.tensor(div_torch.squeeze(1).squeeze(1).squeeze(1).transpose(-1, -2), names=['batch', 'x', 'y']), domain.bounds)
-
-        # Before entering the network, the torch strucutre should be retaken!
-        # Remember torch follows (bsz, channel, nny, nnx), flags should already be OK
-        # Phiflow follows (bsz, channel, nnx, nny)
-        #div_torch = div_torch.transpose(-1, -2)
-
-        #div_torch = div_torch * flags.squeeze(2)
         network_in = torch.cat((div_torch.squeeze(2), flags.squeeze(2)), dim=1)
 
 
         # Network inference
         pressure_torch, time_Unet = self.multiScale(network_in)
 
-        #pressure_torch = pressure_torch* flags.squeeze(2)
-
         # Pressure in obstacles!
-        #pressure_torch *= (flags.squeeze(2))
         pressure = CenteredGrid(math.tensor(pressure_torch.squeeze(1).transpose(-1, -2), names=['batch', 'x', 'y']), domain.bounds)
         gradp = field.spatial_gradient(pressure, type=type(input_velocity))
 
@@ -548,193 +517,14 @@ class PhiflowNet(nn.Module):
         _, _, UDiv = convert_phi_to_torch(velocity, pressure, pressure)
         UDiv, pressure_torch = UDiv.unsqueeze(2).contiguous(), pressure_torch.unsqueeze(2).contiguous()
 
-        #velocityUpdate(pressure=pressure_torch, U=UDiv, flags=flags)     
-        #velocity, _ = load_values_phi(UDiv, flags, domain)
-
-        #pressure_torch = pressure_torch.transpose(-1,-2).contiguous()
-        #UDiv = UDiv.transpose(-1,-2).contiguous()
         velocityUpdate(pressure=pressure_torch, U=UDiv, flags=flags)
-
-        #velocity, _ = load_values_phi(UDiv, flags, domain)
         velocity, _ = load_values(UDiv, flags, domain)
-
-
+        # Compute torch and phiflow divergence
         div_out_torch = velocityDivergence(UDiv, flags)
-        
-        #div_out = CenteredGrid(math.tensor(div_out_torch.squeeze(1).squeeze(1).transpose(-1, -2), names=['batch', 'x', 'y']), domain.bounds)
         div_out = divergence(velocity)
-
-        # Subtract grad pressure
-        #velocity = (velocity - gradp).with_(extrapolation=velocity.extrapolation)
-        # Calculate final divergence
-        #div_out = divergence(velocity)
-        #if batch_idx == 0:
-        #    self.debug(input_velocity, velocity, pressure, gradp, domain, div_torch.squeeze(2), flags, div_out, div_in, epoch, batch_idx, str, std_mask_v, norm_conf)
 
         if norm_conf['normalize']:
             pressure *= (std_mask_p*norm_conf['scale_factor'])
             velocity *= (std_mask_v*norm_conf['scale_factor'])
 
         return pressure, velocity, div_out, div_in
-
-    def debug(self, input_velocity, velocity, pressure, gradp, domain, div_torch, flags, div_out, div_in, epoch, batch_idx, str, std_mask_v, norm_conf):
-
-        with torch.no_grad():
-
-            # Now solve with torch to debug
-            obstacles = ()
-            active = domain.grid(HardGeometryMask(~union(*[obstacle.geometry for obstacle in obstacles])), extrapolation=domain.boundaries['active_extrapolation'])
-            accessible = domain.grid(active, extrapolation=domain.boundaries['accessible_extrapolation'])
-            hard_bcs = field.stagger(accessible, math.minimum, domain.boundaries['accessible_extrapolation'], type=type(velocity))
-            #velocity = layer_obstacle_velocities(velocity * hard_bcs, obstacles).with_(extrapolation=domain.boundaries['near_vector_extrapolation'])
-            div_CG = div_in
-            div_CG = divergence(input_velocity/ (std_mask_v*norm_conf['scale_factor']))
-
-
-            # Solve pressure
-            def laplace(p):
-                grad = spatial_gradient(p, type(velocity))
-                grad = grad.with_(extrapolation=domain.boundaries['near_vector_extrapolation'])
-                div = divergence(grad)
-                lap = where(active, div, p)
-                return lap
-
-            pressure_guess = None
-            solve_params= math.LinearSolve(None, 1e-4)
-            pressure_guess = pressure_guess if pressure_guess is not None else domain.scalar_grid(0)
-            converged, pressure_CG, iterations = field.solve(laplace, y=div_CG, x0=pressure_guess, solve_params=solve_params, constants=[active, hard_bcs])
-            if math.all_available(converged) and not math.all(converged):
-                raise AssertionError(f"pressure solve did not converge after {iterations} iterations\nResult: {pressure_CG.values}")
-
-            # Subtract grad pressure
-            gradp_CG = field.spatial_gradient(pressure_CG, type=type(velocity)) * hard_bcs
-
-            pressure_CG_torch = pressure_CG.values._native.unsqueeze(1).transpose(-1, -2)
-            _, _, UDiv_CG = convert_phi_to_torch(input_velocity/(std_mask_v*norm_conf['scale_factor']), pressure_CG, pressure_CG)
-            UDiv_CG, pressure_CG_torch = UDiv_CG.unsqueeze(2).contiguous(), pressure_CG_torch.unsqueeze(2).contiguous()
-
-            velocityUpdate(pressure=pressure_CG_torch, U=UDiv_CG, flags=flags)
-            #velocity_CG, _ = load_values_phi(UDiv_CG, flags, domain)
-            velocity_CG, _ = load_values(UDiv_CG, flags, domain)
-
-            gradp_x_CG_np = gradp_CG.staggered_tensor().tensors[0]._native.transpose(-1, -2).cpu().detach().numpy()[0]
-            gradp_y_CG_np = gradp_CG.staggered_tensor().tensors[1]._native.transpose(-1, -2).cpu().detach().numpy()[0]
-            #velocity_CG = (input_velocity/(std_mask_v*norm_conf['scale_factor']) - gradp_CG).with_(extrapolation=input_velocity.extrapolation)
-            div_out_CG = divergence(velocity_CG)
-            div_out_CG_torch = velocityDivergence(UDiv_CG, flags)
-
-        debug_folder = norm_conf['debug_folder']
-        if batch_idx == 0 and not os.path.isfile(os.path.join(debug_folder, 'Net_debug_{}_{}.png'.format(str, epoch))):
-            p_mean = torch.mean(pressure.values._native.detach().cpu()[0, :, :])
-            for i in range(0, 1):
-                fig, axs = plt.subplots(1, 6, figsize=(20,3))
-                axs[0].set_title('Div in torch')
-                im0 = axs[0].imshow((div_torch.detach().cpu().numpy())[i, 0, :, :], vmin= -0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = 0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im0, ax=axs[0])
-                axs[1].set_title('Div in CG')
-                im1 = axs[1].imshow((div_CG.values._native.transpose(-1, -2)).detach().cpu()[i, :, :], vmin= -0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = 0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im1, ax=axs[1])
-                axs[2].set_title('Div out torch')
-                im2 = axs[2].imshow((div_out.values._native.transpose(-1, -2)).detach().cpu()[i, :, :] , vmin= -0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = 0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im2, ax=axs[2])
-                axs[3].set_title('Div out CG')
-                #im3 = axs[3].imshow((div_out_CG_torch).detach().cpu()[i, 0, 0, :, :], vmin= -0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = 0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('seismic'))
-                im3 = axs[3].imshow((div_out_CG.values._native.transpose(-1, -2)).detach().cpu()[i, :, :], vmin= -0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = 0.1*np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im3, ax=axs[3])
-                axs[4].set_title('Pressure torch')
-                im4 = axs[4].imshow(pressure.values._native.transpose(-1, -2).detach().cpu()[i, :, :] -p_mean, vmin= -np.max(np.abs(pressure_CG.values._native.detach().cpu().numpy())[i, :, :]), vmax = np.max(np.abs(pressure_CG.values._native.detach().cpu().numpy())[i, :, :]), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im4, ax=axs[4])
-                axs[5].set_title('Pressure CG')
-                im5 = axs[5].imshow(pressure_CG.values._native.transpose(-1, -2).detach().cpu()[i, :, :] , vmin= -np.max(np.abs(pressure_CG.values._native.detach().cpu().numpy())[i, :, :]), vmax = np.max(np.abs(pressure_CG.values._native.detach().cpu().numpy())[i, :, :]), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im5, ax=axs[5])
-                fig.tight_layout()
-                fig.savefig(os.path.join(debug_folder,'Net_debug_{}_{}.png'.format(str, epoch)))
-                plt.close()
-
-            for i in range(0, 1):
-                fig, axs = plt.subplots(1, 7, figsize=(20,3))
-                im0 = axs[0].imshow(np.abs((div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('Reds'))
-                axs[0].set_title('Div in ')
-                fig.colorbar(im0, ax=axs[0])
-                axs[1].set_title('Div out')
-                im1 = axs[1].imshow(np.abs((div_out.values._native.transpose(-1, -2)).detach().cpu()[i, :, :] ), vmax = np.max(np.abs(div_torch.detach().cpu().numpy())[i, 0, :, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im1, ax=axs[1])
-                axs[2].set_title('velocity x in')
-                im2 = axs[2].imshow(np.abs(input_velocity.staggered_tensor().tensors[0]._native[i].transpose(-1, -2).detach().cpu()[:, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im2, ax=axs[2])
-                axs[3].set_title('velocity y in')
-                im3 = axs[3].imshow(np.abs(input_velocity.staggered_tensor().tensors[1]._native[i].transpose(-1, -2).detach().cpu()[:, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im3, ax=axs[3])
-                axs[4].set_title('velocity x out')
-                im4 = axs[4].imshow(np.abs(velocity.staggered_tensor().tensors[0]._native[i].transpose(-1, -2).detach().cpu()[:, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im4, ax=axs[4])
-                axs[5].set_title('velocity y out')
-                im5 = axs[5].imshow(np.abs(velocity.staggered_tensor().tensors[1]._native[i].transpose(-1, -2).detach().cpu()[:, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im5, ax=axs[5])
-                axs[6].set_title('Flags')
-                im6 = axs[6].imshow(flags.detach().cpu().numpy()[i, 0, 0], cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im6, ax=axs[6])
-                fig.tight_layout()
-                fig.savefig(os.path.join(debug_folder,'Net_inside_mask_{}_{}.png'.format(str, epoch)))
-                plt.close()
-            
-            gradp_x_np = gradp.staggered_tensor().tensors[0]._native.transpose(-1, -2).cpu().detach().numpy()[0]
-            gradp_y_np = gradp.staggered_tensor().tensors[1]._native.transpose(-1, -2).cpu().detach().numpy()[0]
-
-            for i in range(0, 1):
-                fig, axs = plt.subplots(1, 7, figsize=(20,3))
-                im0 = axs[0].imshow(np.abs((div_torch.detach().cpu().numpy())[i, 0, :, :]), vmax = np.max(np.abs(div_torch.detach().cpu().numpy())), cmap=plt.get_cmap('Reds'))
-                axs[0].set_title('Div in ')
-                fig.colorbar(im0, ax=axs[0])
-                axs[1].set_title('Div out')
-                im1 = axs[1].imshow(np.abs((div_out.values._native.transpose(-1, -2)).detach().cpu()[i, :, :] ), vmax = np.max(np.abs(div_torch.detach().cpu().numpy())), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im1, ax=axs[1])
-                axs[2].set_title('velocity x in')
-                im2 = axs[2].imshow(np.abs(input_velocity.staggered_tensor().tensors[0]._native[i].transpose(-1, -2).detach().cpu()[:, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im2, ax=axs[2])
-                axs[3].set_title('velocity y in')
-                im3 = axs[3].imshow(np.abs(input_velocity.staggered_tensor().tensors[1]._native[i].transpose(-1, -2).detach().cpu()[:, :]), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im3, ax=axs[3])
-                im4 = axs[4].imshow(gradp_x_np, vmin = -np.max(gradp_x_np), vmax= np.max(gradp_x_np),cmap=plt.get_cmap('seismic'))
-                axs[4].set_title('Gradp x')
-                fig.colorbar(im4, ax=axs[4])
-                axs[5].set_title('Gradp y')
-                im5 = axs[5].imshow(gradp_y_np, vmin = -np.max(gradp_y_np), vmax= np.max(gradp_y_np),cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im5, ax=axs[5])
-                axs[6].set_title('Pressure')
-                im6 = axs[6].imshow(np.abs(pressure.values._native.transpose(-1, -2).detach().cpu()[i, :, :] ), cmap=plt.get_cmap('Reds'))
-                fig.colorbar(im6, ax=axs[6])
-                fig.tight_layout()
-                fig.savefig(os.path.join(debug_folder, 'Net_grad_mask_{}_{}.png'.format(str, epoch)))
-                plt.close()
-
-
-            for i in range(0, 1):
-                fig, axs = plt.subplots(1, 6, figsize=(20,3))
-                im0 = axs[0].imshow(pressure.values._native.transpose(-1, -2).detach().cpu()[i, :, :]-p_mean, vmin = -0.1*np.max(np.abs(pressure_CG.values._native.detach().cpu()[i, :, :].numpy())), vmax= 0.1*np.max(np.abs(pressure_CG.values._native.detach().cpu()[i, :, :].numpy())), cmap=plt.get_cmap('seismic'))
-                axs[0].set_title('Pressure ')
-                fig.colorbar(im0, ax=axs[0])
-
-                axs[1].set_title('Pressure CG')
-                im1 = axs[1].imshow(pressure_CG.values._native.transpose(-1, -2).detach().cpu()[i, :, :], vmin = -0.1*np.max(np.abs(pressure_CG.values._native.detach().cpu()[i, :, :].numpy())), vmax= 0.1*np.max(np.abs(pressure_CG.values._native.detach().cpu()[i, :, :].numpy())), cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im1, ax=axs[1])
-
-                axs[2].set_title('Gradp x')
-                im2 = axs[2].imshow(gradp_x_np, vmin = -np.max(gradp_x_CG_np), vmax= np.max(gradp_x_CG_np),cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im2, ax=axs[2])
-
-                axs[3].set_title('Gradp y')
-                im3 = axs[3].imshow(gradp_y_np, vmin = -np.max(gradp_y_CG_np), vmax= np.max(gradp_y_CG_np),cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im3, ax=axs[3])
-
-                axs[4].set_title('Gradp CG x')
-                im4 = axs[4].imshow(gradp_x_CG_np, vmin = -np.max(gradp_x_CG_np), vmax= np.max(gradp_x_CG_np),cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im4, ax=axs[4])
-
-                axs[5].set_title('Gradp CG y')
-                im5 = axs[5].imshow(gradp_y_CG_np, vmin = -np.max(gradp_y_CG_np), vmax= np.max(gradp_y_CG_np),cmap=plt.get_cmap('seismic'))
-                fig.colorbar(im5, ax=axs[5])
-
-                fig.tight_layout()
-                fig.savefig(os.path.join(debug_folder,'Net_grad_CG_mask_{}_{}.png'.format(str, epoch)))
-                plt.close()

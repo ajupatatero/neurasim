@@ -11,7 +11,7 @@ def main():
 
 
     for i,atype in enumerate(config['analysis_type']):
-        
+
         #SINGLE
         if atype == 'all':
             sim.plot_velocity_probe()
@@ -32,7 +32,6 @@ def main():
             sim.print_mean_forces()
         if atype == 'geoemtry':
             NotImplemented
-            #sim.plot_geometry()
 
         if atype == 'snaps':
             sim.plot_snaps()

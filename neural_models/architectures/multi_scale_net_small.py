@@ -38,7 +38,7 @@ class _ConvBlock1(nn.Module):
             nn.ReplicationPad2d(1),
             nn.Conv2d(mid2_channels,mid1_channels,kernel_size = 3),
         ]
-        
+
         layers.append(nn.ReplicationPad2d(1))
         layers.append(nn.Conv2d(mid1_channels, out_channels, kernel_size = 3))
         self.encode = nn.Sequential(*layers)
@@ -57,27 +57,21 @@ class _ConvBlock2(nn.Module):
         super(_ConvBlock2, self).__init__()
         layers = [
             nn.ReplicationPad2d(2),
-            #nn.ReflectionPad2d(2),
             nn.Conv2d(in_channels, mid1_channels, kernel_size=5),
             nn.ReLU(inplace=True),
             nn.ReplicationPad2d(1),
-            #nn.ReflectionPad2d(1),
             nn.Conv2d(mid1_channels, mid2_channels, kernel_size=3),
             nn.ReLU(),
             nn.ReplicationPad2d(1),
-            #nn.ReflectionPad2d(1),
             nn.Conv2d(mid2_channels,mid3_channels,kernel_size = 3),
             nn.ReLU(),
             nn.ReplicationPad2d(1),
-            #nn.ReflectionPad2d(1),
             nn.Conv2d(mid3_channels,mid2_channels,kernel_size = 3),
             nn.ReLU(),
             nn.ReplicationPad2d(1),
-            #nn.ReflectionPad2d(1),
             nn.Conv2d(mid2_channels,mid1_channels,kernel_size = 3),
         ]
         layers.append(nn.ReplicationPad2d(1))
-        #layers.append(nn.ReflectionPad2d(1))
         layers.append(nn.Conv2d(mid1_channels, out_channels, kernel_size = 3))
         self.encode = nn.Sequential(*layers)
 
@@ -146,7 +140,7 @@ class MultiScaleNetSmall(nn.Module):
                                          F.interpolate(convN_4out,(half_size),mode = 'bilinear',align_corners=align)),dim = 1) )
             convN_1out = self.convN_1( torch.cat((F.interpolate(x,(x.size()[2:]),mode = 'bilinear',align_corners=align),
                                          F.interpolate(convN_2out,(x.size()[2:]),mode = 'bilinear',align_corners=align)),dim = 1) )
-            #final_out = self.final(convN_1out)
+
             final_out = torch.cat((self.final(convN_1out),\
                     F.interpolate(convN_2out,(x.size()[2:]),mode = 'bilinear',align_corners=align),\
                     F.interpolate(F.interpolate(convN_4out,(half_size),mode = 'bilinear',align_corners=align),\
@@ -157,8 +151,8 @@ class MultiScaleNetSmall(nn.Module):
             interpol_4 = F.interpolate(x,(quarter_size),mode = 'bilinear',align_corners=align)
             convN_4out = self.convN_4(interpol_4)
             interpol_2 = F.interpolate(x,(half_size),mode = 'bilinear',align_corners=align)
-            interpol_4_b = F.interpolate(convN_4out,(half_size),mode = 'bilinear',align_corners=align)        
-            concatenated_2 = torch.cat((interpol_2,interpol_4_b),dim=1) 
+            interpol_4_b = F.interpolate(convN_4out,(half_size),mode = 'bilinear',align_corners=align)
+            concatenated_2 = torch.cat((interpol_2,interpol_4_b),dim=1)
             convN_2out = self.convN_2(concatenated_2)
             interpol_1 = F.interpolate(x,(x.size()[2:]),mode = 'bilinear',align_corners=align)
             interpol_2_b = F.interpolate(convN_2out,(x.size()[2:]),mode = 'bilinear',align_corners=align)
@@ -169,6 +163,6 @@ class MultiScaleNetSmall(nn.Module):
             interpolate_n4 = F.interpolate(F.interpolate(convN_4out,(half_size),mode = 'bilinear',align_corners=align),(x.size()[2:]),mode = 'bilinear',align_corners=align)
             concat_fin = torch.cat((final_big, interpolate_n2, interpolate_n4), dim =1)
             final_out = concat_fin
-            
+
         #return final_out
         return final_out[:,0].unsqueeze(1), final_out

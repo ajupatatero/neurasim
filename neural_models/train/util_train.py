@@ -86,10 +86,10 @@ def convert_phi_to_torch(velocity, pressure, div_out):
     out_p = pressure
     out_U = velocity
 
-    div_out_t = div_out.values._native 
+    div_out_t = div_out.values._native
     out_p_t = out_p.values._native
     out_U_t = torch.cat((out_U.staggered_tensor().tensors[0]._native.unsqueeze(1),
-                            out_U.staggered_tensor().tensors[1]._native.unsqueeze(1)), dim=1)[:,:,:-1,:-1] 
+                            out_U.staggered_tensor().tensors[1]._native.unsqueeze(1)), dim=1)[:,:,:-1,:-1]
 
     # Change order from (nnx, nny) to (nny, nnx) !
     div_out_t = div_out_t.transpose(-1, -2)
@@ -127,7 +127,7 @@ def get_std_phiflow(velocity, domain, std_norm):
     extrapolation = math.extrapolation.ZERO
     #tensor_std = math.wrap(torch.cat((std_norm, std_norm), dim=1).expand(-1, -1, velocity.box.upper._native[0] +1 , velocity.box.upper._native[1] +1), 'batch,vector,x,y')
     tensor_std = math.wrap(torch.cat((std_norm, std_norm), dim=1).expand(-1, -1, velocity.cells._shape[0] +1 , velocity.cells._shape[1] +1), 'batch,vector,x,y')
-    
+
     tensor_std_unstack = unstack_staggered_tensor(tensor_std)
     std_mask_v =  StaggeredGrid(tensor_std_unstack, geom.Box(lower, upper), extrapolation)
 
@@ -175,13 +175,13 @@ def load_values(UDiv, flags, domain):
     nny = UDiv.size(3)
     nnx = UDiv.size(4)
 
-    # Create velocity tensor with size nny+1 nnx+1, as FluidNet assumes that value = 0 
+    # Create velocity tensor with size nny+1 nnx+1, as FluidNet assumes that value = 0
     UDiv_big = torch.zeros((bsz, dim, nnz, nny+1, nnx+1)).cuda()
     UDiv_big[:,:,:,:-1,:-1] = UDiv
 
     # Transpose as the structure in torch is (bsz, channel, nnz, nny, nnx)
     # In Phiflow the structure is rather (bsz, channel, nnx, nny)
-    UDiv_big = UDiv_big.transpose(-1, -2)    
+    UDiv_big = UDiv_big.transpose(-1, -2)
 
     velocity_init =  domain.staggered_grid(1)
     tensor_U = math.wrap(UDiv_big.squeeze(2), 'batch,vector,x,y')
@@ -215,44 +215,6 @@ def load_values(UDiv, flags, domain):
     vel_mask =  StaggeredGrid(tensor_flag_unstack, geom.Box(lower, upper), extrapolation)
 
     return velocity, vel_mask
-
-#def load_values_phi(UDiv, flags, domain):
-#
-#    # Get dimensions for tensor creation
-#    bsz = UDiv.size(0)
-#    dim = UDiv.size(1)
-#    nnz = UDiv.size(2)
-#    nnx = UDiv.size(3)
-#    nny = UDiv.size(4)
-#
-#    # Create velocity tensor with size nny+1 nnx+1, as FluidNet assumes that value = 0 
-#    UDiv_big = torch.zeros((bsz, dim, nnz, nnx+1, nny+1)).cuda()
-#    UDiv_big[:,:,:,:-1,:-1] = UDiv
-#
-#    velocity_init =  domain.staggered_grid(1)
-#    tensor_U = math.wrap(UDiv_big.squeeze(2), 'batch,vector,x,y')
-#    lower = math.wrap(velocity_init.box.lower)
-#    upper = math.wrap(velocity_init.box.upper)
-#    extrapolation = math.extrapolation.ZERO
-#    tensor_U_unstack = unstack_staggered_tensor(tensor_U)
-#    velocity =  StaggeredGrid(tensor_U_unstack, geom.Box(lower, upper), extrapolation)
-#
-#
-#    flags_big = torch.zeros((bsz, dim, nnz, nnx+1, nny+1)).cuda()
-#    flags_big_next = torch.zeros((bsz, dim, nnz, nnx+1, nny+1)).cuda()
-#    flags_big[:,0,:,:-1,:-1] = (2-flags.squeeze(1))
-#    flags_big_next[:,0,:,:-1,1:] = (2-flags.squeeze(1))
-#    flags_big[:,0] *= flags_big_next[:,0]
-#
-#    flags_big[:,1,:,:-1,:-1] = (2-flags.squeeze(1))
-#    flags_big_next[:,1,:,1:,:-1] = (2-flags.squeeze(1))
-#    flags_big[:,1] *= flags_big_next[:,1]
-#
-#    tensor_flags = math.wrap(flags_big.squeeze(2), 'batch,vector,x,y')
-#    tensor_flag_unstack = unstack_staggered_tensor(tensor_flags)
-#    vel_mask =  StaggeredGrid(tensor_flag_unstack, geom.Box(lower, upper), extrapolation)
-#
-#    return velocity, vel_mask
 
 def change_nan_zero(velocity, domain):
 

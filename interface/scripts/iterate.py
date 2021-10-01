@@ -2,36 +2,36 @@ import numpy as np
 import os
 
 def meta_simulate(CONSTANT,ITERABLE,EXECUTE):
-    '''Function to run a meta analysis over a set of iterable parameters. Notice ther eis no limitation to 
-    the number of parameters to iterate. 
+    '''Function to run a meta analysis over a set of iterable parameters. Notice ther eis no limitation to
+    the number of parameters to iterate.
 
     usage: meta_simulate(CONSTANT,ITERABLE,EXECUTE)
 
     -CONSTANT = [['Lx', 150],
             ['Lx', 50],
             ['Nt', 10],
-            ['gpu', True]    !! The bool arguments are only the -gpu the other part doesn't matter!! 
+            ['gpu', True]    !! The bool arguments are only the -gpu the other part doesn't matter!!
         ]
 
     -ITERABLE = [ ['variable name to pass to simulate', [1.5, 2.5, 3.0]],
-               ['variable 2', [150, 450]], 
-               ['variable 3', [50, 100, 200, 300, 400, 500, 700, 850, 1000]], 
+               ['variable 2', [150, 450]],
+               ['variable 3', [50, 100, 200, 300, 400, 500, 700, 850, 1000]],
                ['range input', range(0,5,1) ],
-               ['array input', np.linspace(0,5,3)]    
+               ['array input', np.linspace(0,5,3)]
             ]
-    
+
     -EXECUTE = function name or script.py with path
 
-    Notice: 
-    1) All the variables of the simulation that depend on iterable parameters, include its calculation within 
+    Notice:
+    1) All the variables of the simulation that depend on iterable parameters, include its calculation within
     the simulate function or script.
     2) The iterable parameters input can be a list, an array, or a range type variable
-    
+
     '''
-    
+
     def for_recursive(iterable_list, depth_index=0, iteration_index=[]):
         number_of_loops = np.shape(iterable_list)[0]
-        
+
         if depth_index == number_of_loops:  #Base Case
             #create subcase iterable values and properties name parser list
             PARSER = []
@@ -43,7 +43,6 @@ def meta_simulate(CONSTANT,ITERABLE,EXECUTE):
             #parse properties to simulate
             try:
                 print(f'Launching simulation with: {PARSER}')
-                #TODO: LAUNCH EACH CASE ON A DIFFERENT NODE OR THREAD!!!
 
                 if callable(EXECUTE):
                     #pass arguments treated by the parser to the function diretly
@@ -51,10 +50,6 @@ def meta_simulate(CONSTANT,ITERABLE,EXECUTE):
                     args = parser.parse_args()
                     EXECUTE(**vars(args))
                 else:
-                    #run script
-                    #print(os.getcwd())
-                    #exec(open(EXECUTE).read())
-                    
                     #spawn a new process (needed to pass arguments) == paralel each subcase works on pando???
                     txt=""
                     for i in range(0,len(PARSER)-1,2):
@@ -69,7 +64,7 @@ def meta_simulate(CONSTANT,ITERABLE,EXECUTE):
 
 
     print("\033[2J\033[1;1f") # Borrar pantalla y situar cursor
-    print("\033[1;35;47m"+"  FLUIDNET (meta analysis launcher) "+'\033[0;m') 
+    print("\033[1;35;47m"+"  FLUIDNET (meta analysis launcher) "+'\033[0;m')
     #1.Correct the inputs that are not lists
     for i, ite in enumerate(ITERABLE):
         if ite[1] is not list:

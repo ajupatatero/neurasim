@@ -18,7 +18,7 @@ import pdb
 from ..dataset_managers.dataset import *
 from ..architectures.model import *
 from .trainer import *
-from .util_train import * 
+from .util_train import *
 
 def launch_train(conf):
 
@@ -88,11 +88,7 @@ def launch_train(conf):
         path = conf['modelDir']
         path_list = path.split(glob.os.sep)
         saved_model_name = glob.os.path.join('/', *path_list, path_list[-1] + '_saved.py')
-        #temp_model = glob.os.path.join('lib', path_list[-1] + '_saved_resume.py')
-        #copyfile(saved_model_name, temp_model)
 
-        #assert glob.os.path.isfile(temp_model), temp_model  + ' does not exits!'
-        #spec = importlib.util.spec_from_file_location('model_saved', temp_model)
         spec = importlib.util.spec_from_file_location('model_saved', saved_model_name)
         model_saved = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(model_saved)
@@ -127,7 +123,6 @@ def launch_train(conf):
 
         # Initialize network weights with Kaiming normal method (a.k.a MSRA)
         net.apply(init_weights)
-        #lib.summary(net, (5,1,128,128))
 
         if resume:
             net.load_state_dict(state['state_dict'])
@@ -150,8 +145,6 @@ def launch_train(conf):
         #************************ Training and Validation*******************
         # Test set Scenes idx to plot during validation
         list_to_plot = [batch_size, 40*batch_size, 80*batch_size, 178*batch_size]
-
-
 
         # Create some arrays for recording results
         train_loss_plot = np.empty((0,7))
@@ -191,15 +184,13 @@ def launch_train(conf):
             # We do that only if resuming training.
             path, last = glob.os.path.split(m_path)
             saved_model_name = glob.os.path.join(path, last, last + '_saved.py')
-            copyfile('/tmpdir/ajuriail/neuralsim/fluidnet_3/neural_models/architectures/model.py', saved_model_name)
+            copyfile('/path/to/neurasim/neural_models/architectures/model.py', saved_model_name)
 
             # Delete plot file if starting from scratch
             if (glob.os.path.isfile(file_train + '.npy') and glob.os.path.isfile(file_val + '.npy')):
                 print('Are you sure you want to delete existing files and start training from scratch. [y/n]')
-                #Ekhi Debug 
                 glob.os.remove(file_train + '.npy')
-                glob.os.remove(file_val + '.npy')              
-                #choice = input().lower()
+                glob.os.remove(file_val + '.npy')
 
         # Save config dicts
         torch.save(conf, file_conf)
@@ -219,7 +210,7 @@ def launch_train(conf):
         print('==> Beginning simulation')
         for epoch in range(start_epoch, n_epochs+1):
 
-            train_loss, p_l2_tr, div_l2_tr, p_l1_tr, div_l1_tr, div_lt_tr = trainer._train_epoch(epoch, path) 
+            train_loss, p_l2_tr, div_l2_tr, p_l1_tr, div_l1_tr, div_lt_tr = trainer._train_epoch(epoch, path)
             val_loss, p_l2_val, div_l2_val, p_l1_val, div_l1_val, div_lt_val = trainer._val_epoch(epoch, path, list_to_plot)
 
             #Step scheduler, will reduce LR if loss has plateaued

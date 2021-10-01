@@ -15,19 +15,9 @@ class InputParser():
         self.parser = argparse.ArgumentParser(formatter_class= SmartFormatter, add_help=False)
         self.parser.add_argument("-cd", "--conf_dir", default=glob.os.path.join('./', 'case/'), help="Path of the configuration yaml files directory.")
 
-        #If some parameters are always mandatory, they can be added here, so that there are always passed as default, even when the user doesn't define 
+        #If some parameters are always mandatory, they can be added here, so that there are always passed as default, even when the user doesn't define
         #them  in the config file or as arg input. At the same time, if you want to use the parser without a yaml file, you have to define the parameters
         #in here, and stablish a default and a TYPE is always a good practice to avoid errors.
-
-        #help, default, type, action (storetrue), choices
-
-
-        #TODO: hacer que la definicion sea externa a este documento, asi mas generico y no tienes que entrar aqui
-        #porque pueden haber ciertos parametros que depenguan solo de la simulacion como el alpha. Sino, hacer un parametro argument
-        #addicional que contemple los kwargs no incluidos en parser o directamente como stackoverflow de tratar los argum con key none
-        #esto se haria en input proces y asi aqui definir los genericos, y si alguno concreto sim parsear directamente sin hacer nada y coger-lo del config
-        #en el fichero sim_main.py
-
 
         #SIMULATION
         self.parser.add_argument("-gpu", default=False, type= bool)
@@ -46,9 +36,6 @@ class InputParser():
         self.parser.add_argument("-Ny", default=3, type=int) #Ny: 100 #[] number of control volumes in y direction
         self.parser.add_argument("-Nt", default=1, type=int) #Nt: 2 #[] number of time steps to simulate
 
-
-
-
         self.arguments = None
         self.config = {}
 
@@ -64,7 +51,7 @@ class InputParser():
         print("Input arguments provided: \n")
         for key,value in vars(self.arguments).items():
             print("arg: " + key + ", value: "+value+"\n")
-            
+
     def load_yaml(self):
         #Load Configuration Parameters
         try:
@@ -83,8 +70,6 @@ class InputParser():
     def proces_input(self):
         #Priority criteria for selection: 1)input parser  2)yaml  3)parser default
         for key,value in vars(self.arguments).items():
-            
-            #TODO: simplify grammar with simConf['modelDir'] = arguments.modelDir or simConf['modelDir']
 
             if value is not None and value is not self.parser.get_default(key):
                 #case 1
@@ -100,31 +85,22 @@ class InputParser():
                 print("\nFATAL ERROR:\n Input Parser: Input key without any value assigned")
                 print(key +" " +value)
                 exit()
-            
+
     def check_input_consistency(self):
         '''
         Function to check the coherence and consistency of the inputs. For instance, if the files and folders exist.
         Or if the different paraemeters don't contradict between themselfs.
         '''
+        pass
 
-        #Notice: This is only for general parameters. If there is some particular coherence check for a subclass. Specify them within it.
-
-        #Check if folders and files exists
-        #assert glob.os.path.isfile(restart_config_file), 'YAML config file does not exists for restarting.'
-        #assert (glob.os.path.exists(simConf['modelDir'])), 'Directory ' + str(simConf['modelDir']) + ' does not exists'
-
-        #Check if Nx,dx,Lx are coherent
-
-        #etc
-        
 
     def check_input_set(self):
         '''
         Function to check that all the parameters necessary for a given simulation have been passed.
-        
-        TODO: since all the required parameters should be provided in the parser as default this function will be 
+
+        TODO: since all the required parameters should be provided in the parser as default this function will be
         eventually removed. But for the moment, just in case is conserved.
-        
+
         '''
         pass
 
@@ -134,7 +110,7 @@ class SimulationParser(InputParser):
     def __init__(self):
         super().__init__()
         self.parser = argparse.ArgumentParser(parents=[self.parser], description='Simulation parser.', epilog="---")
-        
+
         #Add extra arguments needed for the simulation
 
     def check_input_consistency(self):
@@ -147,7 +123,7 @@ class TrainingParser(InputParser):
     def __init__(self):
         super().__init__()
         self.parser = argparse.ArgumentParser(parents=[self.parser], description='Training parser.', epilog="---")
-        
+
         #Add extra arguments needed for the training
 
     def check_input_consistency(self):

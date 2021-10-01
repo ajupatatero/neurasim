@@ -7,9 +7,9 @@ setup(
     author='Anonymus',
     license='LICENSE.txt',
 
-    packages=find_packages(include=['NeuraSim']),   
+    packages=find_packages(include=['NeuraSim']),
     install_requires=[
-        "numpy", "scipy", "matplotlib", "imageio", 
+        "numpy", "scipy", "matplotlib", "imageio",
     ],
 
     #Include shell scripts realted to pando ....
@@ -25,7 +25,6 @@ setup(
             'simulate=interface.commands.simulate:main',
             'train=interface.commands.train:main',
             'analyze=interface.commands.analyze:main',
-            'meta_analyze=interface.commands.meta_analyze:main',
             'update=interface.commands.update:main',
             'mgit=interface.commands.mgit:main',
             'launch=interface.commands.launch:main',

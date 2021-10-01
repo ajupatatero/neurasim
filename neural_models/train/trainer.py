@@ -15,9 +15,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data
 
-#from fluidnet.fluid_import import *
-
-#from ..simulate_phi import sim_phi
 from engines.phi.torch.flow import *
 from engines.phi.field._grid import Grid, CenteredGrid, StaggeredGrid, unstack_staggered_tensor
 from .util_train import lt_setting, convert_phi_to_torch, load_values
@@ -59,14 +56,8 @@ class Trainer:
         self.m_path = config_train['modelDir']
 
 
-        # Initialize velocity and mask before calling the network
-        # These values will be created during the ST training,
-        # whereas for the LT the previous fields will be used!
-        #self.velocity = self.domain.staggered_grid(Noise(batch=self.bsz))
-        #self.vel_mask = self.domain.staggered_grid(Noise(batch=self.bsz))
-
     def compute_loss_st(self, velocity, pressure, div_out, data, target):
-    
+
         # Convert to torch
         div_out_t, out_p_t, out_U_t = convert_phi_to_torch(velocity, pressure, div_out)
 
@@ -84,13 +75,13 @@ class Trainer:
 
 
     def compute_loss_lt(self, velocity, pressure, div_out):
-        
+
         # Convert to torch
         div_out_t, out_p_t, out_U_t = convert_phi_to_torch(velocity, pressure, div_out)
 
         # Calculate targets
         target_div_LT = torch.zeros_like(div_out_t)
-        
+
         return self.config['divLongTermLambda']*self.mse(div_out_t, target_div_LT)
 
     def initialize_losses(self):
@@ -140,7 +131,7 @@ class Trainer:
         # For now, we work ONLY in 2d
 
         is3D = len(input_[0, 0, :, 0, 0]) > 1
-        
+
         assert is3D == False, 'Input can only be 2D'
 
         # Declare sizes
@@ -153,7 +144,7 @@ class Trainer:
             UDiv = input_[:,1:4].contiguous()
         else:
             flags = input_[:,3].unsqueeze(1).contiguous()
-            UDiv = input_[:,1:3].contiguous() 
+            UDiv = input_[:,1:3].contiguous()
 
         velocity, vel_mask = load_values(UDiv, flags, domain)
 
@@ -178,7 +169,7 @@ class Trainer:
                     data, target = data.cuda(), target.cuda()
 
                 self.optimizer.zero_grad()
-                
+
                 is3D = data.size(1) == 6
                 assert (is3D and data.size(1) == 6) or (not is3D and data.size(1) == 5), "Data must have \
                         5 input chan for 2D, 6 input chan for 3D"
@@ -187,45 +178,45 @@ class Trainer:
                 # Create Velocity and Vel_mask tensors
                 self.trainsim.velocity, self.trainsim.vel_mask = self.load_from_mantaflow(data, self.trainsim.domain)
 
-                self.trainsim.pressure, self.trainsim.velocity, div_out, div_in = self.model( self.trainsim.velocity, 
+                self.trainsim.pressure, self.trainsim.velocity, div_out, div_in = self.model( self.trainsim.velocity,
                             (2-flags), self.trainsim.domain, self.config['normalization'], epoch, batch_idx, 'train')
 
                 # Compute st loss
-                pL2Loss, divL2Loss, pL1Loss, divL1Loss = self.compute_loss_st(self.trainsim.velocity, self.trainsim.pressure, 
+                pL2Loss, divL2Loss, pL1Loss, divL1Loss = self.compute_loss_st(self.trainsim.velocity, self.trainsim.pressure,
                                                                 div_out, data, target)
                 loss = pL2Loss + divL2Loss + pL1Loss + divL1Loss
 
                 if self.lt_loss and not self.lt_grad:
                     with torch.no_grad():
                         # Get configuration and dt after lt randomization
-                        self.trainsim.dt, num_future_steps, self.config = lt_setting(self.config, is3D) 
+                        self.trainsim.dt, num_future_steps, self.config = lt_setting(self.config, is3D)
 
                         # Forward the simulation using Phiflow!
                         for i in range(0, num_future_steps):
-                            div_out, div_in = self.trainsim.run(i, epoch, flags) 
-                        
+                            div_out, div_in = self.trainsim.run(i, epoch, flags)
+
                         self.trainsim.run_star()
 
-                    pressure, velocity, div_out, div_in = self.model( self.trainsim.velocity, (2-flags), 
+                    pressure, velocity, div_out, div_in = self.model( self.trainsim.velocity, (2-flags),
                                     self.trainsim.domain, self.config['normalization'], epoch, batch_idx, 'final_nograd_lt')
 
                     divLTLoss = self.compute_loss_lt(velocity, pressure, div_out)
                     loss += divLTLoss.item()
-                    
-                    
+
+
 
                 elif self.lt_loss:
 
                     # Get configuration and dt after lt randomization
-                    self.trainsim.dt, num_future_steps, self.config = lt_setting(self.config, is3D) 
+                    self.trainsim.dt, num_future_steps, self.config = lt_setting(self.config, is3D)
 
                     # Forward the simulation using Phiflow!
                     for i in range(0, num_future_steps):
-                        div_out, div_in = self.trainsim.run(i, epoch, flags)      
+                        div_out, div_in = self.trainsim.run(i, epoch, flags)
 
                     divLTLoss = self.compute_loss_lt(self.trainsim.velocity, self.trainsim.pressure, div_out)
                     loss += divLTLoss.item()
-                    
+
 
                 # Useful Statistics
                 if self.lt_loss:
@@ -238,13 +229,12 @@ class Trainer:
                     print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.4f}\t'.format(
                         epoch, batch_idx * len(data), len(self.train_data_loader.dataset),
                         100. * batch_idx * len(data) / len(self.train_data_loader.dataset), loss))
-                        
+
                 n_batches +=1
 
                 # Run the backpropagation for all the losses.
-                #torch.autograd.set_detect_anomaly(True)
-                #loss.backward(retain_graph=True)
                 loss.backward()
+
                 # Step the optimizer
                 self.optimizer.step()
                 self.optimizer.zero_grad()
@@ -281,13 +271,13 @@ class Trainer:
             #loop through data, sorted into batches
             for batch_idx, (data, target) in enumerate (self.val_data_loader):
 
-                if data.size(0) == self.bsz: 
+                if data.size(0) == self.bsz:
 
                     if torch.cuda.is_available():
                         data, target = data.cuda(), target.cuda()
 
                     self.optimizer.zero_grad()
-                    
+
                     is3D = data.size(1) == 6
                     assert (is3D and data.size(1) == 6) or (not is3D and data.size(1) == 5), "Data must have \
                             5 input chan for 2D, 6 input chan for 3D"
@@ -304,9 +294,9 @@ class Trainer:
                     loss = pL2Loss + divL2Loss + pL1Loss + divL1Loss
 
                     if self.lt_loss:
-                
+
                         # Get configuration and dt after lt randomization
-                        self.trainsim.dt, num_future_steps, self.config = lt_setting(self.config, is3D) 
+                        self.trainsim.dt, num_future_steps, self.config = lt_setting(self.config, is3D)
 
                         # Forward the simulation using Phiflow!
                         for i in range(0, num_future_steps):
@@ -314,7 +304,7 @@ class Trainer:
 
                         divLTLoss = self.compute_loss_lt(self.trainsim.velocity, self.trainsim.pressure, div_out)
                         loss += divLTLoss
-                        
+
 
                     # Useful Statistics
                     if self.lt_loss:
@@ -331,8 +321,8 @@ class Trainer:
 
                     # Print fields for debug
                     if self.print_training  and (batch_idx*len(data) in list_to_plot) and epoch % self.plot_every == 1:
-                        plot_train(list_to_plot, batch_idx, epoch, data, target, flags, self.m_path, 
-                                self.trainsim.pressure, self.trainsim.velocity, div_out, div_in, self.trainsim.domain, self.config, 
+                        plot_train(list_to_plot, batch_idx, epoch, data, target, flags, self.m_path,
+                                self.trainsim.pressure, self.trainsim.velocity, div_out, div_in, self.trainsim.domain, self.config,
                                 self.save_or_show, self.losslist())
 
                     n_batches +=1
@@ -352,4 +342,3 @@ class Trainer:
             # Return loss scores
             return self.total_loss, self.p_l2_total_loss, self.div_l2_total_loss, \
                     self.p_l1_total_loss, self.div_l1_total_loss, self.div_lt_total_loss
-
