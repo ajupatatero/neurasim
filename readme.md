@@ -1,6 +1,6 @@
-# FluidNet (version 3)
+# Code for ICML submission
 Project to accelerate the resolution of the Poisson step in CFD solvers, by means of convolutional neural networks.
-This project is based on PhiFlow v2 and [FluidNet](https://github.com/google/FluidNet) 
+This project is based on PhiFlow v2.
 
 Please check the original [PhiFlow v2](https://github.com/tum-pbs/PhiFlow) code, which has been used to complement this code. This work has been developed respecting the Phiflow license agreement.
 
@@ -66,7 +66,7 @@ simulate -cd config_simulation_plume_cyl.yaml
 
 ## 3. Retraining networks
 
-To retrain new network architectures, or to try new hyperparameter configurations, a training dataset should be created. In this works case, the same **2D dataset** as the original FluidNet [Section 1: Generating the data - Generating training data](https://github.com/google/FluidNet#1-generating-the-data) (generated with MantaFlow) is used. Please carefully follow the intructions to generate the dataset, which should occupy around 48Gb.
+To retrain new network architectures, or to try new hyperparameter configurations, a training dataset should be created. In this works case, the same **2D dataset** as the original FluidNet paper [Section 1: Generating the data - Generating training data](https://github.com/google/FluidNet#1-generating-the-data) (generated with MantaFlow) is used. Please carefully follow the intructions to generate the dataset, which should occupy around 48Gb.
 
 The dataset file structure should be located in ```<dataDir>``` folder with the following structure: 
 ```
